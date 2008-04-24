@@ -2,10 +2,12 @@
 
 require_once 'HTMLPurifier/DefinitionCache.php';
 
-HTMLPurifier_ConfigSchema::defineAllowedValues(
-  'Cache', 'DefinitionImpl',
-  array('Drupal')
-);
+if (!method_exists('HTMLPurifier_ConfigSchema', 'add')) { // test for 3.1.0rc1+
+    HTMLPurifier_ConfigSchema::defineAllowedValues(
+      'Cache', 'DefinitionImpl',
+      array('Drupal')
+    );
+}
 
 /**
  * Cache handler that stores all data in drupals builtin cache
