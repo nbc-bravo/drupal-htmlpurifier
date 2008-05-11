@@ -40,14 +40,15 @@ function htmlpurifier_filter($op, $delta = 0, $format = -1, $text = '') {
       $cache = cache_get($cid, 'cache_htmlpurifier');
       if ($cache) return $cache->data;
       
-      $config = _htmlpurifier_get_config($format);
-      $purifier = htmlpurifier_create_purifier($config);
+      _htmlpurifier_load();
+      $purifier = new HTMLPurifier( _htmlpurifier_get_config($format) );
       _htmlpurifier_add_filters($format, $purifier);
       $ret = $purifier->purify($text);
       cache_set($cid, 'cache_htmlpurifier', $ret, CACHE_PERMANENT);
       return $ret;
 
     case 'settings':
+      _htmlpurifier_load();
       return _htmlpurifier_settings($format);
 
     default:
@@ -55,11 +56,11 @@ function htmlpurifier_filter($op, $delta = 0, $format = -1, $text = '') {
   }
 }
 
-function htmlpurifier_create_purifier($config) {
+function _htmlpurifier_load() {
   // Load HTML Purifier library
   $module_path = drupal_get_path('module', 'htmlpurifier');
   require_once "$module_path/library/HTMLPurifier.auto.php";
-
+  
   // Overload HTML Purifiers default cache handler with our own so that
   // Drupals built-in cache is used
   require_once "$module_path/HTMLPurifier_DefinitionCache_Drupal.php";
@@ -75,7 +76,6 @@ function htmlpurifier_create_purifier($config) {
     $factory->caches['Drupal']['URI']  = new HTMLPurifier_DefinitionCache_Drupal('URI');
   }
 
-  return new HTMLPurifier($config);
 }
 
 function _htmlpurifier_settings($format) {
@@ -86,11 +86,71 @@ function _htmlpurifier_settings($format) {
     '#title' => t('HTML Purifier'),
     '#collapsible' => TRUE,
   );
+  $form['htmlpurifier']['htmlpurifier_allowedhtml'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('HTML tags and attributes'),
+  );
+    $enabled = variable_get("htmlpurifier_allowedhtml_enabled_$format", FALSE);
+    $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_allowedhtml_enabled_$format"] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable allowed specification'),
+      '#default_value' => $enabled,
+      '#description' => t('If unchecked, all safe HTML elements are allowed; otherwise, the contents of the text-field below are used as the ruleset. This option is independent of the blacklists.'),
+      '#attributes' => array(
+        'onclick' => '$("#edit-htmlpurifier-allowedhtml-'. $format .'").attr("disabled", this.checked ? "" : "disabled")',
+      ),
+    );
+    $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_allowedhtml_$format"] = array(
+      '#type' => 'textarea',
+      '#title' => t('Allowed specification'),
+      '#default_value' => variable_get("htmlpurifier_allowedhtml_$format", ''),
+      '#description' => t('Specify allowed tags and attributes in this form: tag[attr1|attr2],tag2[attr],*[global-attr]. You can also use newlines in place of the commas. <strong>Warning:</strong> You cannot allow elements or attributes that HTML Purifier does not recognize as safe, so <code>script</code> or <code>form</code> will have no effect.'),
+    );
+    if (!$enabled) {
+      $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_allowedhtml_$format"]['#disabled'] = TRUE;
+    }
+    if (!defined('HTMLPurifier::VERSION') && version_compare(HTMLPurifier::VERSION, '3.1.0-dev', '>=')) {
+      $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_forbiddenelements_$format"] = array(
+        '#type' => 'textarea',
+        '#title' => t('Forbidden elements'),
+        '#default_value' => variable_get("htmlpurifier_forbiddenelements_$format", ''),
+        '#description' => t('Specify elements that should be forbidden in form: tag1, tag2. Commas can be replaced with newlines. In event of a conflict, this option overrides allowed HTML. Note: It is unnecessary to forbid unsafe elements, as HTML Purifier automatically purifies them out.'),
+      );
+      $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_forbiddenattributes_$format"] = array(
+        '#type' => 'textarea',
+        '#title' => t('Forbidden attributes'),
+        '#default_value' => variable_get("htmlpurifier_forbiddenattributes_$format", ''),
+        '#description' => t('Specify attributes that should be forbidden in form: tag1@attr, tag2@attr1, tag2@attr2 global-attr. Commas can be replaced with newlines. In event of a conflict, this option overrides allowed HTML. Note: It is unnecessary to forbid unsafe attributes, as HTML Purifier automatically purifies them out.'),
+      );
+    } else {
+      $form['htmlpurifier']['htmlpurifier_allowedhtml']['notice'] = array(
+        '#type' => 'markup',
+        '#value' => t('<strong>Notice:</strong> You are using an earlier version of HTML Purifier, so the forbidden attributes and elements configuration directives are not available. You can download the latest version of HTML Purifier at <a href="http://htmlpurifier.org/downloads.html">htmlpurifier.org</a>.'),
+      );
+    }
   $form['htmlpurifier']["htmlpurifier_enableattrid_$format"] = array(
     '#type' => 'checkbox',
     '#title' => t('Allow the ID attribute in HTML'),
     '#default_value' => variable_get("htmlpurifier_enableattrid_$format", FALSE),
     '#description' => t('If enabled, allows the use of ID attributes in HTML tags. This is disabled by default due to the fact that without proper configuration user input can easily break the validation of a webpage by specifying an ID that is already on the surrounding HTML.'),
+  );
+  $form['htmlpurifier']["htmlpurifier_autoparagraph_$format"] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto-paragraph HTML'),
+    '#default_value' => variable_get("htmlpurifier_autoparagraph_$format", TRUE),
+    '#description' => t('If enabled, HTML Purifier will convert text surrounded in double-newlines into paragraphs. Single new-lines are not affected.'),
+  );
+  $form['htmlpurifier']["htmlpurifier_linkify_$format"] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Linkify HTML'),
+    '#default_value' => variable_get("htmlpurifier_linkify_$format", TRUE),
+    '#description' => t('If enabled, HTML Purifier will convert URIs in HTML into full HTML links.'),
+  );
+  $form['htmlpurifier']["htmlpurifier_externalresources_$format"] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Forbid external resources'),
+    '#default_value' => variable_get("htmlpurifier_externalresources_$format", TRUE),
+    '#description' => t('If enabled, HTML Purifier will forbid external resources such as images to be embedded in HTML.'),
   );
   $form['htmlpurifier']["htmlpurifier_preserveyoutube_$format"] = array(
     '#type' => 'checkbox',
@@ -110,15 +170,27 @@ function _htmlpurifier_settings($format) {
 
 function _htmlpurifier_get_config($format) {
   $config = array(
+    'Core.AggressivelyFixLt' => TRUE,
+    'URI.DisableExternalResources' => variable_get("htmlpurifier_externalresources_$format", TRUE),
     'Attr.EnableID' => variable_get("htmlpurifier_enableattrid_$format", FALSE),
+    'AutoFormat.Linkify' => variable_get("htmlpurifier_linkify_$format", TRUE),
+    'AutoFormat.AutoParagraph' => variable_get("htmlpurifier_autoparagraph_$format", TRUE),
+    'HTML.Allowed' =>
+        variable_get("htmlpurifier_allowedhtml_enabled_$format", FALSE) ?
+        variable_get("htmlpurifier_allowedhtml_$format", '') : null,
   );
+  if (defined('HTMLPurifier::VERSION') && version_compare(HTMLPurifier::VERSION, '3.1.0-dev', '>=')) {
+    $config['HTML.ForbiddenElements']   = variable_get("htmlpurifier_forbiddenelements_$format", '');
+    $config['HTML.ForbiddenAttributes'] = variable_get("htmlpurifier_forbiddenattributes_$format", '');
+  }
   return $config;
 }
 
 function _htmlpurifier_add_filters($format, &$purifier) {
   if (variable_get("htmlpurifier_preserveyoutube_$format", FALSE) && version_compare($purifier->version, '1.4.1', '>=')) {
     require_once 'HTMLPurifier/Filter/YouTube.php';
-    $purifier->addFilter(new HTMLPurifier_Filter_YouTube());
+    // This is deprecated in recent versions, but we don't care.
+    @$purifier->addFilter(new HTMLPurifier_Filter_YouTube());
   }
 }
 

@@ -37,3 +37,74 @@ function htmlpurifier_install() {
 function htmlpurifier_uninstall() {
   db_query('DROP TABLE {cache_htmlpurifier}');
 }
+
+/**
+ * Checks the version of HTML Purifier and fatally errors out if there's a
+ * problem.
+ */
+function _htmlpurifier_version_check() {
+  // This version of HTML Purifier is required
+  static $req_version = '2.1.0';
+  
+  // Can't use drupal_get_path, since module may not have been installed.
+  $module_path = dirname(__FILE__);
+  $s = DIRECTORY_SEPARATOR;
+  if (!file_exists("$module_path/library/HTMLPurifier.auto.php")) {
+    echo "<strong>Fatal error:</strong> Could not find HTML Purifier
+          installation in $module_path{$s}library. Please copy contents
+          of library to this folder or ensure HTMLPurifier.auto.php exists.
+          You can download HTML Purifier at
+          <a href=\"http://htmlpurifier.org/download.html\">htmlpurifier.org</a>.
+          After you have done so, reload this page.";
+    exit;
+  }
+  
+  require_once "$module_path/library/HTMLPurifier.auto.php";
+  $purifier = new HTMLPurifier();
+  if (version_compare($purifier->version, $req_version, '<')) {
+    echo "<strong>Fatal error:</strong> HTML Purifier $old is not compatible
+          with this module: HTML Purifier <strong>$req_version</strong> or later is required.
+          You can download the latest version of HTML Purifier at
+          <a href=\"http://htmlpurifier.org/download.html\">htmlpurifier.org</a>.";
+    exit;
+  }
+  
+  // Everything looks ok!
+  return true;
+}
+
+// -- Update functions ------------------------------------------------------ //
+
+function htmlpurifier_update_1() {
+  _htmlpurifier_version_check();
+  $ret = array();
+  $result = db_query("SHOW TABLES LIKE '{cache_htmlpurifier}'");
+  if (!db_fetch_array($result)) {
+      switch ($GLOBALS['db_type']) {
+        case 'mysql':
+        case 'mysqli':
+          $ret[] = update_sql("CREATE TABLE {cache_htmlpurifier} (
+            cid varchar(255) NOT NULL default '',
+            data longblob,
+            expire int NOT NULL default '0',
+            created int NOT NULL default '0',
+            headers text,
+            PRIMARY KEY (cid),
+            INDEX expire (expire)
+          ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+          break;
+        case 'pgsql':
+          $ret[] = update_sql("CREATE TABLE {cache_htmlpurifier} (
+            cid varchar(255) NOT NULL default '',
+            data bytea,
+            expire int NOT NULL default '0',
+            created int NOT NULL default '0',
+            headers text,
+            PRIMARY KEY (cid)
+          )");
+          $ret[] = update_sql("CREATE INDEX {cache_htmlpurifier}_expire_idx ON {cache_htmlpurifier} (expire)");
+          break;
+      }
+  }
+  return $ret;
+}
