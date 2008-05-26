@@ -4,6 +4,7 @@
  * Implementation of hook_install().
  */
 function htmlpurifier_install() {
+  _htmlpurifier_version_check();
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':

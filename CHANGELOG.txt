@@ -1,6 +1,7 @@
 5.x-1.4, unknown release date
 - Bugfix release
 - Fix regression with DefinitionCache and Drupal's caching system. Thanks mfb!
+- Check for HTML Purifier version on install. Thanks chirale!
 
 5.x-1.3, released 2008-05-12
 - Bugfix release, fix fatal error on configure page when using version
