@@ -171,6 +171,7 @@ function _htmlpurifier_settings($format) {
 function _htmlpurifier_get_config($format) {
   $config = array(
     'Core.AggressivelyFixLt' => TRUE,
+    'Cache.DefinitionImpl' => 'Drupal',
     'URI.DisableExternalResources' => variable_get("htmlpurifier_externalresources_$format", TRUE),
     'Attr.EnableID' => variable_get("htmlpurifier_enableattrid_$format", FALSE),
     'AutoFormat.Linkify' => variable_get("htmlpurifier_linkify_$format", TRUE),
