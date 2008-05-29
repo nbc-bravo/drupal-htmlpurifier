@@ -109,7 +109,7 @@ function _htmlpurifier_settings($format) {
     if (!$enabled) {
       $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_allowedhtml_$format"]['#disabled'] = TRUE;
     }
-    if (defined('HTMLPurifier::VERSION') && version_compare(HTMLPurifier::VERSION, '3.1.0-dev', '>=')) {
+    if (defined('HTMLPurifier::VERSION') && version_compare(constant('HTMLPurifier::VERSION'), '3.1.0-dev', '>=')) {
       $form['htmlpurifier']['htmlpurifier_allowedhtml']["htmlpurifier_forbiddenelements_$format"] = array(
         '#type' => 'textarea',
         '#title' => t('Forbidden elements'),
