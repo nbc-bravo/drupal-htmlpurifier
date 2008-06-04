@@ -5,6 +5,7 @@
 - Fix parse error in early versions of PHP due to unsupported class constant
   syntax. Thanks jmjohn!
 - Better install directions for PHP4. Thanks jmjohn!
+- Fix syntax error in PHP 4 for module
 
 5.x-1.3, released 2008-05-12
 - Bugfix release, fix fatal error on configure page when using version

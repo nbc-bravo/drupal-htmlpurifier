@@ -180,7 +180,7 @@ function _htmlpurifier_get_config($format) {
         variable_get("htmlpurifier_allowedhtml_enabled_$format", FALSE) ?
         variable_get("htmlpurifier_allowedhtml_$format", '') : null,
   );
-  if (defined('HTMLPurifier::VERSION') && version_compare(HTMLPurifier::VERSION, '3.1.0-dev', '>=')) {
+  if (defined('HTMLPurifier::VERSION') && version_compare(constant('HTMLPurifier::VERSION'), '3.1.0-dev', '>=')) {
     $config['HTML.ForbiddenElements']   = variable_get("htmlpurifier_forbiddenelements_$format", '');
     $config['HTML.ForbiddenAttributes'] = variable_get("htmlpurifier_forbiddenattributes_$format", '');
   }
