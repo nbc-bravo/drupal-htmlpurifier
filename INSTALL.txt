@@ -1,9 +1,23 @@
 * Place the htmlpurifier folder in your drupal modules directory.
 
-* Download HTML Purifier from http://htmlpurifier.org/
+* Download HTML Purifier. If your host is running PHP 4, you will need to
+  install the 2.1 series; please see this URL:
+  
+    http://htmlpurifier.org/download.html#PHP4
+  
+  If you're on PHP 5, use this URL:
+  
+    http://htmlpurifier.org/download.html
 
-* Extract the "library" folder and place it inside your modules/htmlpurifier
+* IF YOU DOWNLOADED THE REGULAR OR LITE DISTRIBUTION:
+  Extract the "library" folder and place it inside your modules/htmlpurifier
   directory.
+
+* IF YOU DOWNLOADED THE STANDALONE DISTRIBUTION:
+  Create a library folder in your modules/htmlpurifier directory.
+  Then, extract the "htmlpurifier-x.y.z" folder and place its contents
+  (HTMLPurifier.standalone.php and the standalone folder) inside the library
+  folder. Rename HTMLPurifier.standalone.php to HTMLPurifier.auto.php.
 
 * Go to Administer > Site building > Modules and enable this module
 
