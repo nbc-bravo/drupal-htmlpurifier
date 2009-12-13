@@ -158,6 +158,12 @@ function _htmlpurifier_settings($format) {
     '#default_value' => variable_get("htmlpurifier_preserveyoutube_$format", FALSE),
     '#description' => t('If enabled, allows the use of embedded YouTube videos. See !url for more information.', array('!url' => l('Embedding YouTube Videos', 'http://hp.jpsband.org/live/docs/enduser-youtube.html'))),
   );
+  $form['htmlpurifier']['htmlpurifier_allow_embed'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Allow safe &lt;embed> and &lt;object> tags (EXPERIMENTAL)'),
+    '#default_value' => variable_get('htmlpurifier_allow_embed', FALSE),
+    '#description' => t('If enabled, allows users to embed flash objects. This is considered experimental, and is not recommended unless required by your users. See !url for more information.', array('!url' => l('SafeEmbed documentation', 'http://htmlpurifier.org/live/configdoc/plain.html', array(), NULL, 'HTML.SafeEmbed'))),
+  );
   $form['htmlpurifier']["htmlpurifier_help_$format"] = array(
     '#type' => 'checkbox',
     '#title' => t('Display help text'),
@@ -176,6 +182,8 @@ function _htmlpurifier_get_config($format) {
     'Attr.EnableID' => variable_get("htmlpurifier_enableattrid_$format", FALSE),
     'AutoFormat.Linkify' => variable_get("htmlpurifier_linkify_$format", TRUE),
     'AutoFormat.AutoParagraph' => variable_get("htmlpurifier_autoparagraph_$format", TRUE),
+    'HTML.SafeEmbed' => variable_get('htmlpurifier_allow_embed', FALSE),
+    'HTML.SafeObject' => variable_get('htmlpurifier_allow_embed', FALSE),
     'HTML.Allowed' =>
         variable_get("htmlpurifier_allowedhtml_enabled_$format", FALSE) ?
         variable_get("htmlpurifier_allowedhtml_$format", '') : null,
