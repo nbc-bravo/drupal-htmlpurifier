@@ -1,4 +1,7 @@
-5.x-1.4, unknown release date
+5.x-1.5, released 2009-12-12
+- Added support for SafeEmbed and SafeObject by yhager, fixes #593346
+
+5.x-1.4, released 2008-10-11
 - Bugfix release
 - Fix regression with DefinitionCache and Drupal's caching system. Thanks mfb!
 - Check for HTML Purifier version on install. Thanks chirale!
