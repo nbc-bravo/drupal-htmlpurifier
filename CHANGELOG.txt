@@ -1,3 +1,6 @@
+7.x-1.0, unknown release date
+- Ported to 7.x, ticket #804240
+
 6.x-2.4, unknown release date
 - Fixed #839490; can't find library from install profile
 - Fixed #819728; make use of Filter.ExtractStyleBlocks.  Thanks
