@@ -6,3 +6,4 @@ files[] = htmlpurifier.install
 files[] = htmlpurifier.module
 files[] = htmlpurifier.admin.inc
 files[] = HTMLPurifier_DefinitionCache_Drupal.php
+configure = admin/config/content/htmlpurifier

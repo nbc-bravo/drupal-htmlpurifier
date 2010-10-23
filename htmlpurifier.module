@@ -24,7 +24,12 @@ function htmlpurifier_help($path, $arg) {
   $output = NULL;
   switch ($path) {
     case 'admin/help#htmlpurifier':
-      $output = t('Filter that removes malicious HTML and ensures standards compliant output.');
+      $output = t(<<<TEXT
+The HTML Purifier Drupal module provides a text filter that removes
+malicious HTML and ensures standards compliant output.  You can modify
+text formats at <a href="@formats">the format configurations page</a>.
+TEXT
+, array('@formats' => url('admin/config/content/formats')));
       break;
   }
   return $output;
