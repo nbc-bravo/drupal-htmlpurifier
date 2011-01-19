@@ -1,3 +1,7 @@
+6.x-2.5, unknown release date
+- Fixed #993276; variable_set() called unconditionally in
+  _htmlpurifier_load(), patch contributed by catch
+
 6.x-2.4, released 2010-10-23
 - Fixed #839490; can't find library from install profile
 - Fixed #819728; make use of Filter.ExtractStyleBlocks.  Thanks
