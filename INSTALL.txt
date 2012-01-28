@@ -30,9 +30,9 @@ and it's nice to have dom and iconv.
      Extract the htmlpurifier-x.y.z archive to
      sites/all/libraries/htmlpurifier or to
      sites/<site>/libraries/htmlpurifier for a specific site in a
-     multisite Drupal setup.  (Note that this is different from the
-     module directory installation; you need the *entire* folder, not
-     just the library folder).
+     multisite Drupal setup.  You can get away with just placing
+     the library folder, so that sites/<site>/libraries/htmlpurifier/library
+     exists (see below).
 
      The final setup should be, when making the library and module
      available to all sites:
