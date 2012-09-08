@@ -68,8 +68,13 @@ function htmlpurifier_check_version($force = FALSE) {
     $result  = drupal_http_request('http://htmlpurifier.org/live/VERSION');
     if ($result->code == 200) {
       $version = trim($result->data);
-      variable_set('htmlpurifier_version_check_failed', FALSE);
-      variable_set('htmlpurifier_version_current', $version);
+      if (variable_get('html_purifier_version_check_failed', FALSE) == TRUE) {
+        variable_set('htmlpurifier_version_check_failed', FALSE);
+      }
+      $current_version = variable_get('htmlpurifier_version_current', '');
+      if ($current_version != $version) {
+        variable_set('htmlpurifier_version_current', $version);
+      }
       return $version;
     }
     else {
