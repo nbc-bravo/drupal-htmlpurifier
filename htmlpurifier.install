@@ -1,5 +1,8 @@
 <?php
-
+/**
+ * @file
+ * Install, update and uninstall functions for the HTML Purifier module.
+ */
 /**
  * Implements hook_schema().
  */
@@ -45,23 +48,24 @@ function htmlpurifier_requirements($phase) {
   }
 
   // If it's still not available, use something else
-  $complain_loc = false;
+  $complain_loc = FALSE;
   if (function_exists('libraries_get_path')) {
     $library_path = libraries_get_path('htmlpurifier');
-    $using_libraries = true;
+    $using_libraries = TRUE;
     if (!file_exists("$library_path/library/HTMLPurifier.auto.php")) {
       $library_path = dirname(__FILE__);
-      $complain_loc = true;
-      $using_libraries = false;
+      $complain_loc = TRUE;
+      $using_libraries = FALSE;
     }
-  } else {
+  }
+  else {
     $library_path = dirname(__FILE__);
-    $using_libraries = false;
+    $using_libraries = FALSE;
   }
 
   $s = DIRECTORY_SEPARATOR;
   if (!file_exists("$library_path/library/HTMLPurifier.auto.php")) {
-    $requirements['htmlpurifier_library'] = array (
+    $requirements['htmlpurifier_library'] = array(
       'title' => $t('HTML Purifier library'),
       'severity' => REQUIREMENT_ERROR,
       'description' => $t("Could not find HTML Purifier
@@ -108,14 +112,15 @@ function htmlpurifier_requirements($phase) {
       require_once "$library_path/library/HTMLPurifier.auto.php";
       if (defined('HTMLPurifier::VERSION')) {
         $version = HTMLPurifier::VERSION;
-      } else {
+      }
+      else {
         $purifier = new HTMLPurifier;
         $version = $purifier->version;
       }
       variable_set('htmlpurifier_version_ours', $version);
       if (version_compare($version, $req_version, '<')) {
 
-        $requirements['htmlpurifier_library'] = array (
+        $requirements['htmlpurifier_library'] = array(
           'title' => $t('HTML Purifier library'),
           'severity' => REQUIREMENT_ERROR,
           'description' => $t("HTML Purifier @old is not compatible
@@ -163,7 +168,8 @@ function htmlpurifier_requirements($phase) {
         <code>%path</code> with the new directory the downloaded archive
         extracts into. ',
           array('%path' => libraries_get_path('htmlpurifier')));
-      } else {
+      }
+      else {
         $how_to_update = $t('To update, replace
         <code>%path/library/</code> with the <code>library/</code>
         directory from the downloaded archive. ',
@@ -244,16 +250,16 @@ function htmlpurifier_update_7000() {
       $settings['htmlpurifier_basic_config'] = variable_get("htmlpurifier_config_{$record->format}", NULL);
       variable_del("htmlpurifier_config_{$record->format}");
       // Determine the filter type (basic/advanced)
-      $filterName = $module . "_basic";
-      if ($record->delta == '1'){
-        $filterName = $module . "_advanced";
+      $filter_name = $module . "_basic";
+      if ($record->delta == '1') {
+        $filter_name = $module . "_advanced";
       }
       // Store away in the new D7 manner
       db_insert('filter')
         ->fields(array(
           'format' => $record->format,
           'module' => $module,
-          'name' => $filterName,
+          'name' => $filter_name,
           'weight' => $record->weight,
           'settings' => serialize($settings),
           'status' => 1,
@@ -269,7 +275,7 @@ function htmlpurifier_update_7000() {
     // Drop d6 migration table if it is empty
     $query = db_select($d6_table)
       ->fields($d6_table, array('fid'));
-    if (mysql_num_rows($query) == 0){
+    if (mysql_num_rows($query) == 0) {
       db_drop_table($d6_table);
     }
   }
@@ -278,7 +284,7 @@ function htmlpurifier_update_7000() {
  * Clean up the D6 cache_htmlpurifier schema since it was a clone of the system cache schema
  */
 function htmlpurifier_update_7001() {
-  if (db_field_exists('cache_htmlpurifier', 'headers')){
+  if (db_field_exists('cache_htmlpurifier', 'headers')) {
     db_drop_field('cache_htmlpurifier', 'headers');
   }
 }
@@ -290,8 +296,7 @@ function htmlpurifier_update_7001() {
  *
  * @see http://drupal.org/node/993230
  */
-function htmlpurifier_update_7002()
-{
+function htmlpurifier_update_7002() {
   $formats = filter_formats();
   foreach ($formats as $format) {
     $format->filters = filter_list_format($format->format);
