@@ -134,7 +134,7 @@ function htmlpurifier_nodeapi(&$node, $op, $a3, $a4) {
  * Filter tips callback, used by htmlpurifier_filter_info().
  */
 function _htmlpurifier_filter_tips($delta, $format, $long = FALSE) {
-  if (!empty($filter->settings['htmlpurifier_help'])) {
+  if (!empty($delta->settings['htmlpurifier_help'])) {
     return t('HTML tags will be transformed to conform to HTML standards.');
   }
 }
