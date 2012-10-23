@@ -245,6 +245,11 @@ function _htmlpurifier_add_css( &$field, $nid ) {
  *    screen.
  */
 function _htmlpurifier_process_text($text, $filter, $format, $langcode, $cache = TRUE) {
+  // No need to run the filter if there isn't anything to filter
+  // See https://drupal.org/node/1821178
+  if (!$text) {
+    return;
+  }
 
   if ($cache) {
     $cid = $format->format . ':' . $langcode . ':' . hash('sha256', $text);
