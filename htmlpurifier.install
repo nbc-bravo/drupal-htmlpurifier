@@ -273,9 +273,12 @@ function htmlpurifier_update_7000() {
       ->condition('module', $module)
       ->execute();
     // Drop d6 migration table if it is empty
-    $query = db_select($d6_table)
-      ->fields($d6_table, array('fid'));
-    if (mysql_num_rows($query) == 0) {
+    $count = db_select($d6_table)
+      ->fields($d6_table, array('fid'))
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+    if ($count === 0) {
       db_drop_table($d6_table);
     }
   }
