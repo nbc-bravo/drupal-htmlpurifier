@@ -5,15 +5,15 @@
  * Implements HTML Purifier as a Drupal filter.
  */
 
-
-
 // -- HOOK IMPLEMENTATIONS -------------------------------------------------- //
 
 /**
  * Implements hook_flush_caches().
  */
 function htmlpurifier_flush_caches() {
-    return array('cache_htmlpurifier');
+  return array(
+    'cache_htmlpurifier'
+  );
 }
 
 /**
@@ -22,14 +22,17 @@ function htmlpurifier_flush_caches() {
 function htmlpurifier_help($path, $arg) {
   $output = NULL;
   switch ($path) {
-    case 'admin/help#htmlpurifier':
-      $output = t(<<<TEXT
+  case 'admin/help#htmlpurifier':
+    $output = t(
+      <<<TEXT
 The HTML Purifier Drupal module provides a text filter that removes
 malicious HTML and ensures standards compliant output.  You can modify
 text formats at <a href="@formats">the format configurations page</a>.
 TEXT
-, array('@formats' => url('admin/config/content/formats')));
-      break;
+      , array(
+        '@formats' => url('admin/config/content/formats')
+      ));
+    break;
   }
   return $output;
 }
@@ -42,8 +45,12 @@ function htmlpurifier_menu() {
     'title' => 'HTML Purifier settings',
     'description' => 'Configure overall settings for the HTML Purifier filters, including how they are cached.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('htmlpurifier_admin_settings'),
-    'access arguments' => array('administer filters'),
+    'page arguments' => array(
+      'htmlpurifier_admin_settings'
+    ),
+    'access arguments' => array(
+      'administer filters'
+    ),
     'file' => 'htmlpurifier.admin.inc',
   );
 
@@ -60,12 +67,92 @@ function htmlpurifier_cron() {
 }
 
 /**
+ * Implements hook_libraries_info().
+ *
+ * @return
+ *   An associative array whose keys are internal names of libraries and whose
+ *   values are describing each library. Each key is the directory name below
+ *   the 'libraries' directory, in which the library may be found.
+ */
+function htmlpurifier_libraries_info() {
+  $libraries['htmlpurifier'] = array(
+    'name' => 'HTML Purifier library',
+    'vendor url' => 'http://htmlpurifier.org/',
+    'download url' => 'http://htmlpurifier.org/download',
+    'version arguments' => array(
+      'file' => 'VERSION',
+      'pattern' => '@([0-9\.]+)@',
+      'lines' => 1,
+      'cols' => 8,
+    ),
+    'versions' => array(
+      '4.4.0' => array(
+        'files' => array(
+          'php' => array(
+            'library/HTMLPurifier.auto.php',
+          ),
+        ),
+      ),
+    ),
+    'callbacks' => array(
+      'post-load' => array(
+        'htmlpurifier_libraries_postload_callback',
+      ),
+    ),
+  );
+
+  // Optional library for use with ExtractStyleBlocks
+  $libraries['csstidy'] = array(
+    'name' => 'CSSTidy',
+    'vendor url' => 'http://csstidy.sourceforge.net/',
+    'download url' => 'http://csstidy.sourceforge.net/download.php',
+    'version arguments' => array(
+      'file' => 'class.csstidy.php',
+      'pattern' => "/'([0-9.]+)'/",
+      'lines' => 120,
+      'cols' => 200,
+    ),
+    'versions' => array(
+      '1.3' => array(
+        'files' => array(
+          'php' => array(
+            'class.csstidy.php',
+          ),
+        ),
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Registers the Drupal specific cache definition for HTML Purifier
+ *
+ * @param $library
+ *   An array of library information, which may be version- or variant-specific.
+ *   Passed by reference.
+ * @param $version
+ *   The version the library information passed in $library belongs to, or NULL
+ *   if the passed library information is not version-specific.
+ * @param $variant
+ *   The variant the library information passed in $library belongs to, or NULL
+ *   if the passed library information is not variant-specific.
+ */
+function htmlpurifier_libraries_postload_callback(&$library, $version, $variant) {
+  $module_path = drupal_get_path('module', 'htmlpurifier');
+  require_once "$module_path/HTMLPurifier_DefinitionCache_Drupal.php";
+  $factory = HTMLPurifier_DefinitionCacheFactory::instance();
+  $factory->register('Drupal', 'HTMLPurifier_DefinitionCache_Drupal');
+}
+
+/**
  * Checks for updates to the HTML Purifier library.
  */
 function htmlpurifier_check_version($force = FALSE) {
   if ($force || !variable_get('htmlpurifier_version_check_failed', FALSE)) {
     // Maybe this should be changed in the future:
-    $result  = drupal_http_request('http://htmlpurifier.org/live/VERSION');
+    $result = drupal_http_request('http://htmlpurifier.org/live/VERSION');
     if ($result->code == 200) {
       $version = trim($result->data);
       if (variable_get('html_purifier_version_check_failed', FALSE) == TRUE) {
@@ -90,13 +177,13 @@ function htmlpurifier_check_version($force = FALSE) {
  * Implements hook_filter_info().
  */
 function htmlpurifier_filter_info() {
-  _htmlpurifier_load();
   $filters['htmlpurifier_basic'] = array(
     'title' => t('HTML Purifier'),
-    'description' => t('Removes malicious HTML code and ensures that the ' .
-       'output is standards compliant. <strong>Warning:</strong> For ' .
-       'performance reasons, please ensure that there are no highly dynamic ' .
-       'filters before HTML Purifier. '),
+    'description' => t(
+      'Removes malicious HTML code and ensures that the '
+        . 'output is standards compliant. <strong>Warning:</strong> For '
+        . 'performance reasons, please ensure that there are no highly dynamic '
+        . 'filters before HTML Purifier. '),
     'process callback' => '_htmlpurifier_process',
     'settings callback' => '_htmlpurifier_settings',
     'default settings' => array(
@@ -106,7 +193,8 @@ function htmlpurifier_filter_info() {
   );
   $filters['htmlpurifier_advanced'] = array(
     'title' => t('HTML Purifier (advanced)'),
-    'description' => $filters['htmlpurifier_basic']['description'] . t('<em>This version has advanced configuration options, do not enable both at the same time.</em>'),
+    'description' => $filters['htmlpurifier_basic']['description']
+      . t('<em>This version has advanced configuration options, do not enable both at the same time.</em>'),
   ) + $filters['htmlpurifier_basic'];
   return $filters;
 }
@@ -119,10 +207,10 @@ function htmlpurifier_nodeapi(&$node, $op, $a3, $a4) {
 
     // Should we load CSS cache data from teaser or body?
     if ($a3 == TRUE) {
-      _htmlpurifier_add_css( $node->content['teaser']['#value'], $node->nid );
+      _htmlpurifier_add_css($node->content['teaser']['#value'], $node->nid);
     }
     else {
-      _htmlpurifier_add_css( $node->content['body']['#value'], $node->nid );
+      _htmlpurifier_add_css($node->content['body']['#value'], $node->nid);
     }
   }
   // @todo: Deal with CCK fields - probably needs to go in op alter?
@@ -169,7 +257,7 @@ function _htmlpurifier_process($text, $filter, $format, $langcode, $cache) {
  *    Since filters don't know their node context, we have to use a token
  *      to generate the stylesheet scope, and replace it in hook_nodeapi
  */
-function _htmlpurifier_add_css( &$field, $nid ) {
+function _htmlpurifier_add_css(&$field, $nid) {
 
   // Some basic validation to assure we really got a rendered field
   if (!is_string($field)) {
@@ -209,7 +297,8 @@ function _htmlpurifier_add_css( &$field, $nid ) {
 
       // Add the rendered stylesheet to the document header
       if ($style_rendered != '') {
-        drupal_set_html_head('<style type="text/css">' . "\n" . '<!--' . "\n" . $style_rendered . '--></style>');
+        drupal_set_html_head(
+          '<style type="text/css">' . "\n" . '<!--' . "\n" . $style_rendered . '--></style>');
       }
 
       // Remove the HTML Purifier cache key from the field argument
@@ -222,8 +311,6 @@ function _htmlpurifier_add_css( &$field, $nid ) {
     }
   }
 }
-
-
 
 /**
  * Processes HTML according to a format and returns purified HTML. Makes a
@@ -245,89 +332,50 @@ function _htmlpurifier_add_css( &$field, $nid ) {
  *    screen.
  */
 function _htmlpurifier_process_text($text, $filter, $format, $langcode, $cache = TRUE) {
-  // No need to run the filter if there isn't anything to filter
-  // See https://drupal.org/node/1821178
-  if ($text === '') {
-    return;
-  }
-
-  if ($cache) {
-    $cid = $format->format . ':' . $langcode . ':' . hash('sha256', $text);
-    $old = cache_get($cid, 'cache_htmlpurifier');
-    if ($old) return $old->data;
-  }
-
-  _htmlpurifier_load();
-  $config = _htmlpurifier_get_config($format->format);
-
-  // If ExtractStyleBlocks is enabled, we'll need to do a bit more for CSSTidy
-  $config_extractstyleblocks = $config->get('Filter.ExtractStyleBlocks');
-
-  // Maybe this works if CSSTidy is at root? CSSTidy could be other places though
-  if ($config_extractstyleblocks == TRUE) {
-    _htmlpurifier_load_csstidy();
-  }
-
-  $purifier = new HTMLPurifier($config);
-  $ret = $purifier->purify($text);
-
-  // If using Filter.ExtractStyleBlocks we need to handle the CSSTidy output
-  if ($config_extractstyleblocks == TRUE) {
-
-    // We're only going to bother if we're caching! - no caching? no style blocks!
+  $return = $text;
+  $htmlpurifier_library = libraries_load('htmlpurifier');
+  if ($htmlpurifier_library['installed']) {
     if ($cache) {
-
-      // Get style blocks, cache them, and help hook_nodeapi find the cache
-      $styles = $purifier->context->get('StyleBlocks');
-      cache_set('css:' . $cid, $styles, 'cache_htmlpurifier', CACHE_PERMANENT);
-      $ret = '<!-- HTML Purifier Cache #' . $cid . ' -->' . $ret;
+      $cid = $format->format . ':' . $langcode . ':' . hash('sha256', $text);
+      $old = cache_get($cid, 'cache_htmlpurifier');
+      if ($old)
+        return $old->data;
     }
-  }
+    $config = _htmlpurifier_get_config($format->format);
 
-  if ($cache) cache_set($cid, $ret, 'cache_htmlpurifier', CACHE_PERMANENT);
+    // If ExtractStyleBlocks is enabled, we'll need to do a bit more for CSSTidy
+    $config_extractstyleblocks = $config->get('Filter.ExtractStyleBlocks');
 
-  return $ret;
-}
+    // Maybe this works if CSSTidy is at root? CSSTidy could be other places though
+    if ($config_extractstyleblocks == TRUE) {
+      libraries_load('csstidy');
+    }
 
-/**
- * Loads the HTML Purifier library, and performs global initialization.
- */
-function _htmlpurifier_load() {
-  static $done = FALSE;
-  if ($done) {
-    return;
-  }
-  $done = TRUE;
-  $module_path = drupal_get_path('module', 'htmlpurifier');
-  $library_path = $module_path;
-  if (function_exists('libraries_get_path')) {
-    $library_path = libraries_get_path('htmlpurifier');
-    // This may happen if the user has HTML Purifier installed under the
-    // old configuration, but also installed libraries and forgot to
-    // move it over.  There is code for emitting errors in
-    // htmlpurifier.install when this is the case.
-    if (!file_exists("$library_path/library/HTMLPurifier.auto.php")) {
-      // Check for an alternate phrasing and error about it
-      if (file_exists("$library_path/HTMLPurifier.auto.php") &&
-        !file_exists("$module_path/library/HTMLPurifier.auto.php")) {
-        echo "HTML Purifier was installed improperly; move contents of folder $library_path to $library_path/library";
-        exit;
+    $purifier = new HTMLPurifier($config);
+    $return = $purifier->purify($text);
+
+    // If using Filter.ExtractStyleBlocks we need to handle the CSSTidy output
+    if ($config_extractstyleblocks == TRUE) {
+
+      // We're only going to bother if we're caching! - no caching? no style blocks!
+      if ($cache) {
+        // Get style blocks, cache them, and help hook_nodeapi find the cache
+        $styles = $purifier->context->get('StyleBlocks');
+        cache_set('css:' . $cid, $styles, 'cache_htmlpurifier', CACHE_PERMANENT);
+        $return = '<!-- HTML Purifier Cache #' . $cid . ' -->' . $return;
       }
-      $library_path = $module_path;
+    }
+
+    if ($cache) {
+      cache_set($cid, $return, 'cache_htmlpurifier', CACHE_PERMANENT);
+      static $done = FALSE;
+      $done = TRUE;
     }
   }
-
-  require_once "$library_path/library/HTMLPurifier.auto.php";
-  require_once "$module_path/HTMLPurifier_DefinitionCache_Drupal.php";
-
-  $factory = HTMLPurifier_DefinitionCacheFactory::instance();
-  $factory->register('Drupal', 'HTMLPurifier_DefinitionCache_Drupal');
-
-  // Register the version as a variable:
-  $current_version = variable_get('htmlpurifier_version_ours', FALSE);
-  if ($current_version != HTMLPurifier::VERSION) {
-    variable_set('htmlpurifier_version_ours', HTMLPurifier::VERSION);
+  else {
+    drupal_set_message($htmlpurifier_library['error message'], 'error', FALSE);
   }
+  return $return;
 }
 
 /**
@@ -367,10 +415,12 @@ function _htmlpurifier_get_config($format = 0) {
     // D6 version, which also treated this as a per-format setting and
     // therefore had the same limitation.
     $filters = $format ? filter_list_format($format) : array();
-    if (!empty($filters['htmlpurifier_advanced']->status) && isset($filters['htmlpurifier_advanced']->settings['htmlpurifier_advanced_config'])) {
+    if (!empty($filters['htmlpurifier_advanced']->status)
+      && isset($filters['htmlpurifier_advanced']->settings['htmlpurifier_advanced_config'])) {
       $config_data = $filters['htmlpurifier_advanced']->settings['htmlpurifier_advanced_config'];
     }
-    elseif (!empty($filters['htmlpurifier_basic']->status) && isset($filters['htmlpurifier_basic']->settings['htmlpurifier_basic_config'])) {
+    elseif (!empty($filters['htmlpurifier_basic']->status)
+      && isset($filters['htmlpurifier_basic']->settings['htmlpurifier_basic_config'])) {
       $config_data = $filters['htmlpurifier_basic']->settings['htmlpurifier_basic_config'];
     }
     else {
@@ -378,9 +428,15 @@ function _htmlpurifier_get_config($format = 0) {
     }
 
     if (!empty($config_data['Filter.ExtractStyleBlocks'])) {
-      if (!_htmlpurifier_load_csstidy()) {
+      $library = libraries_detect('csstidy');
+      if (!$library['installed']) {
         $config_data['Filter.ExtractStyleBlocks'] = '0';
-        drupal_set_message(t("Could not enable ExtractStyleBlocks because CSSTidy was not installed.  You can download CSSTidy module from <a href='http://drupal.org/project/csstidy'>http://drupal.org/project/csstidy</a>"), 'error', FALSE);
+        $error = t(
+          'Could not enable ExtractStyleBlocks because CSSTidy library was not found, detected or the version is unsupported.  Please download a supported version from %url.',
+          array(
+            '%url' => $library['download url']
+          ));
+        drupal_set_message($error, 'error', FALSE);
       }
     }
     // {FALSE, TRUE, FALSE} = {no index, everything is allowed, don't do mq fix}
@@ -389,26 +445,6 @@ function _htmlpurifier_get_config($format = 0) {
 
   return $config;
 
-}
-
-function _htmlpurifier_load_csstidY() {
-  // If CSSTidy module is installed, it should have a copy we can use
-  $csstidy_path = drupal_get_path('module', 'csstidy') . '/csstidy';
-
-  // Some future-proofing for library path
-  if (function_exists('libraries_get_path')) {
-    $csstidy_library = libraries_get_path('csstidy');
-    if (file_exists("$csstidy_library/class.csstidy.php")) {
-      $csstidy_path = $csstidy_library;
-    }
-  }
-
-  // Load CSSTidy if we can find it
-  if (file_exists("$csstidy_path/class.csstidy.php")) {
-    require_once "$csstidy_path/class.csstidy.php";
-    return TRUE;
-  }
-  return FALSE;
 }
 
 /**
@@ -423,10 +459,7 @@ function _htmlpurifier_load_csstidY() {
 function _htmlpurifier_config_load($format) {
   $config_file = drupal_get_path('module', 'htmlpurifier') . "/config/$format.php";
   $config_function = "htmlpurifier_config_$format";
-  if (
-    !function_exists($config_function) &&
-    file_exists($config_file)
-  ) {
+  if (!function_exists($config_function) && file_exists($config_file)) {
     include_once $config_file;
   }
   return function_exists($config_function) ? $config_function : FALSE;
@@ -453,73 +486,83 @@ function _htmlpurifier_config_load($format) {
  *    Form API array.
  */
 function _htmlpurifier_settings($form, &$form_state, $filter, $format, $defaults) {
-  _htmlpurifier_load();
-
-  // Dry run, testing for errors:
-  _htmlpurifier_process_text('', $filter, $format, LANGUAGE_NONE, FALSE);
-
-  $module_path = drupal_get_path('module', 'htmlpurifier');
-
   $settings = array();
+  $htmlpurifier_library = libraries_detect('htmlpurifier');
+  if ($htmlpurifier_library['installed']) {
 
-  $settings['#attached']['css'][] = "$module_path/config-form.css";
-  $settings['#attached']['js'][] = "$module_path/config-form.js";
-  $settings['#attached']['js'][] = array(
-    'data' => HTMLPurifier_Printer_ConfigForm::getJavaScript(),
-    'type' => 'inline',
-  );
+    // Dry run, testing for errors:
+    _htmlpurifier_process_text('', $filter, $format, LANGUAGE_NONE, FALSE);
 
-  $settings['htmlpurifier_help'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Display help text'),
-    '#default_value' => isset($filter->settings['htmlpurifier_help']) ? $filter->settings['htmlpurifier_help'] : $defaults['htmlpurifier_help'],
-    '#description' => t('If enabled, a short note will be added to the filter tips explaining that HTML will be transformed to conform with HTML standards. You may want to disable this option when the HTML Purifier is used to check the output of another filter like BBCode.'),
-  );
-  if ($config_function = _htmlpurifier_config_load($format->format)) {
-    $settings['notice'] = array(
-      '#type' => 'markup',
-      '#value' => t('<div>Configuration function <code>!function()</code> is already defined. To edit HTML Purifier\'s configuration, edit the corresponding configuration file, which is usually <code>htmlpurifier/config/!format.php</code>. To restore the web configuration form, delete or rename this file.</div>',
-        array('!function' => $config_function, '!format' => $format->format)),
+    $module_path = drupal_get_path('module', 'htmlpurifier');
+
+    $settings['#attached']['css'][] = "$module_path/config-form.css";
+    $settings['#attached']['js'][] = "$module_path/config-form.js";
+    $settings['#attached']['js'][] = array(
+      'data' => HTMLPurifier_Printer_ConfigForm::getJavaScript(),
+      'type' => 'inline',
     );
-  }
-  else {
-    if ($filter->name == 'htmlpurifier_basic') {
-      $title = t('Configure HTML Purifier');
-      $allowed = array(
-        'URI.DisableExternalResources',
-        'URI.DisableResources',
-        'URI.Munge',
-        'Attr.EnableID',
-        'HTML.Allowed',
-        'HTML.ForbiddenElements',
-        'HTML.ForbiddenAttributes',
-        'HTML.SafeObject',
-        'Output.FlashCompat',
-        'AutoFormat.RemoveEmpty',
-        'AutoFormat.Linkify',
-        'AutoFormat.AutoParagraph',
+
+    $settings['htmlpurifier_help'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Display help text'),
+      '#default_value' => isset($filter->settings['htmlpurifier_help']) ? $filter->settings['htmlpurifier_help'] : $defaults['htmlpurifier_help'],
+      '#description' => t(
+        'If enabled, a short note will be added to the filter tips explaining that HTML will be transformed to conform with HTML standards. You may want to disable this option when the HTML Purifier is used to check the output of another filter like BBCode.'),
+    );
+    if ($config_function = _htmlpurifier_config_load($format->format)) {
+      $settings['notice'] = array(
+        '#type' => 'markup',
+        '#value' => t(
+          '<div>Configuration function <code>!function()</code> is already defined. To edit HTML Purifier\'s configuration, edit the corresponding configuration file, which is usually <code>htmlpurifier/config/!format.php</code>. To restore the web configuration form, delete or rename this file.</div>',
+          array(
+            '!function' => $config_function,
+            '!format' => $format->format
+          )),
       );
     }
     else {
-      $title = t('Advanced configuration options');
-      $allowed = TRUE;
+      if ($filter->name == 'htmlpurifier_basic') {
+        $title = t('Configure HTML Purifier');
+        $allowed = array(
+          'URI.DisableExternalResources',
+          'URI.DisableResources',
+          'URI.Munge',
+          'Attr.EnableID',
+          'HTML.Allowed',
+          'HTML.ForbiddenElements',
+          'HTML.ForbiddenAttributes',
+          'HTML.SafeObject',
+          'Output.FlashCompat',
+          'AutoFormat.RemoveEmpty',
+          'AutoFormat.Linkify',
+          'AutoFormat.AutoParagraph',
+        );
+      }
+      else {
+        $title = t('Advanced configuration options');
+        $allowed = TRUE;
+      }
+
+      $intro = '<div class="form-item"><h3>' . $title . '</h3><div class="description">'
+        . t(
+          'Please click on a directive name for more information on what it does before enabling or changing anything!  Changes will not apply to old entries until you clear the cache (see the <a href="@url">settings page</a>).',
+          array(
+            '@url' => url('admin/config/content/htmlpurifier')
+          )) . '</div></div>';
+
+      $config = _htmlpurifier_get_config($format->format);
+      $config_form = new HTMLPurifier_Printer_ConfigForm($filter->name . '_config',
+        'http://htmlpurifier.org/live/configdoc/plain.html#%s');
+      $settings[$filter->name . '_config'] = array(
+        '#markup' => $intro . $config_form->render($config, $allowed, FALSE),
+        '#after_build' => array(
+          '_htmlpurifier_config_hack'
+        ),
+      );
     }
-
-    $intro =
-        '<div class="form-item"><h3>' .
-        $title .
-        '</h3><div class="description">' .
-        t('Please click on a directive name for more information on what it does before enabling or changing anything!  Changes will not apply to old entries until you clear the cache (see the <a href="@url">settings page</a>).', array('@url' => url('admin/config/content/htmlpurifier'))) .
-        '</div></div>';
-
-    $config = _htmlpurifier_get_config($format->format);
-    $config_form = new HTMLPurifier_Printer_ConfigForm(
-      $filter->name . '_config', 'http://htmlpurifier.org/live/configdoc/plain.html#%s'
-    );
-    $settings[$filter->name . '_config'] = array(
-      '#markup' => $intro . $config_form->render($config, $allowed, FALSE),
-      '#after_build' => array('_htmlpurifier_config_hack'),
-    );
+  }
+  else {
+    drupal_set_message($htmlpurifier_library['error message'], 'error', FALSE);
   }
 
   return $settings;
@@ -542,20 +585,30 @@ function _htmlpurifier_config_hack($form_element, &$form_state) {
   if (isset($form_state['input'][$key])) {
     $value = $form_state['input'][$key];
     foreach (array_reverse($parents) as $parent) {
-      $value = array($parent => $value);
+      $value = array(
+        $parent => $value
+      );
     }
     $form_state['values'] = array_merge_recursive($form_state['values'], $value);
   }
-  foreach ($form_state['values'] as $i => $config_data) {
-    if (!is_array($config_data)) continue;
-    if (!empty($config_data['Filter.ExtractStyleBlocks'])) {
-      if (!empty($config_data['Null_Filter.ExtractStyleBlocks.Scope'])) {
-        drupal_set_message(t("You have not set <code>Filter.ExtractStyleBlocks.Scope</code>; this means that users can add CSS that affects all of your Drupal theme and not just their content block.  It is recommended to set this to <code>#node-[%HTMLPURIFIER:NID%]</code> (including brackets) which will automatically ensure that CSS directives only apply to their node."), 'warning', FALSE);
+  $htmlpurifier_advanced_config = isset(
+    $form_state['values']['filters']['htmlpurifier_advanced']['settings']['htmlpurifier_advanced_config']) ? $form_state['values']['filters']['htmlpurifier_advanced']['settings']['htmlpurifier_advanced_config']
+    : NULL;
+  if (isset($htmlpurifier_advanced_config)) {
+    if (!empty($htmlpurifier_advanced_config['Filter.ExtractStyleBlocks'])) {
+      if (!empty($htmlpurifier_advanced_config['Null_Filter.ExtractStyleBlocks.Scope'])) {
+        drupal_set_message(
+          "You have not set <code>Filter.ExtractStyleBlocks.Scope</code>; this means that users can add CSS that affects all of your Drupal theme and not just their content block.  It is recommended to set this to <code>#node-[%HTMLPURIFIER:NID%]</code> (including brackets) which will automatically ensure that CSS directives only apply to their node.",
+          'warning', FALSE);
       }
-      elseif (!isset($config_data['Filter.ExtractStyleBlocks.Scope']) || $config_data['Filter.ExtractStyleBlocks.Scope'] !== '#node-[%HTMLPURIFIER:NID%]') {
-        drupal_set_message(t("You have enabled Filter.ExtractStyleBlocks.Scope, but you did not set it to <code>#node-[%HTMLPURIFIER:NID%]</code>; CSS may not work unless you have special theme support."), 'warning', FALSE);
+      elseif (!isset($htmlpurifier_advanced_config['Filter.ExtractStyleBlocks.Scope'])
+        || $htmlpurifier_advanced_config['Filter.ExtractStyleBlocks.Scope'] !== '#node-[%HTMLPURIFIER:NID%]') {
+        drupal_set_message(
+          "You have enabled Filter.ExtractStyleBlocks.Scope, but you did not set it to <code>#node-[%HTMLPURIFIER:NID%]</code>; CSS may not work unless you have special theme support.",
+          'warning', FALSE);
       }
     }
+
   }
   return $form_element;
 }
@@ -568,5 +621,3 @@ function _htmlpurifier_clear_cache($form, &$form_state) {
   cache_clear_all('*', 'cache_htmlpurifier', TRUE);
   cache_clear_all('htmlpurifier:', 'cache', TRUE);
 }
-
-// vim: syntax=php
