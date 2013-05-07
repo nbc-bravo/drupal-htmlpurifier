@@ -528,7 +528,7 @@ function _htmlpurifier_settings($form, &$form_state, $filter, $format, $defaults
   if ($htmlpurifier_library['installed']) {
 
     // Dry run, testing for errors:
-    _htmlpurifier_process_text('', $filter, $format, LANGUAGE_NONE, FALSE);
+    _htmlpurifier_process_text('dry run text', $filter, $format, LANGUAGE_NONE, FALSE);
 
     $module_path = drupal_get_path('module', 'htmlpurifier');
     $infos = htmlpurifier_get_info();
