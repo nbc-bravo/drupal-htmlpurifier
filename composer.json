@@ -1,0 +1,12 @@
+{
+  'name': 'drupal/htmlpurifier',
+  'description': 'Standards compliant HTML filter written in PHP',
+  'license': 'GPL-2.0+',
+  'require': {
+    'drupal/drupal': '8.*'
+  },
+  'autoload': {
+    'psr-0': { 'HTMLPurifier': 'library/' },
+    'files': ['library/HTMLPurifier.composer.php']
+  }
+}
