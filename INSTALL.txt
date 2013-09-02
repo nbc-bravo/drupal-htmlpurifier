@@ -8,6 +8,10 @@ and it's nice to have dom and iconv.
 * Download HTML Purifier from http://htmlpurifier.org/ You will need
   4.0.0 or later.
 
+* If you use the latest Dev versions of HTML Purifier module, there is
+  working Drush Make support to download the latest HTML Purifier library.
+  The next step isn't necessary if drush is used to download the module.
+
 * There are two locations you can install the HTML Purifier library.
 
   1. Module directory installation. This means installing the library
