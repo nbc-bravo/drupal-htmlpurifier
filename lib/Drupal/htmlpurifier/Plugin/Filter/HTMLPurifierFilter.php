@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\HTMLPurifier\Plugin\Filter\HTMLPurifierFilter.
+ * Contains \Drupal\htmlpurifier\Plugin\Filter\HTMLPurifierFilter.
  */
 
-namespace Drupal\HTMLPurifier\Plugin\Filter;
+namespace Drupal\htmlpurifier\Plugin\Filter;
 
 use Drupal\filter\Annotation\Filter;
 use Drupal\Core\Annotation\Translation;
