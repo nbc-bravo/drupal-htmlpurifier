@@ -15,17 +15,11 @@ use Drupal\filter\Plugin\FilterBase;
  * A filter that removes malicious HTML and ensures standards compliant output.
  *
  * @Filter(
- *   id = "HTMLPurifier",
+ *   id = "htmlpurifier",
  *   module = "htmlpurifier",
  *   title = @Translation("HTMLPurifier"),
+ *   description = @Translation("Removes malicious HTML code and ensures that the output is standards compliant."),
  *   type = FILTER_TYPE_HTML_RESTRICTOR,
- *   settings = {
- *     'AutoFormat.AutoParagraph' => TRUE,
-       'AutoFormat.Linkify' => TRUE,
-       'HTML.Doctype' => 'XHTML 1.0 Transitional',
-       'Core.AggressivelyFixLt' => TRUE,
-       'Cache.DefinitionImpl' => 'Drupal',
- *   },
  *   weight = 20
  * )
  */
@@ -40,7 +34,7 @@ class HTMLPurifierFilter extends FilterBase {
     if ($htmlpurifier_library['installed']) {
 
       // Dry run, testing for errors:
-      _htmlpurifier_process_text('dry run text', $filter, $format, LANGUAGE_NONE, FALSE);
+      $this->process('dry run text', LANGUAGE_NOT_APPLICABLE, FALSE);
 
       $module_path = drupal_get_path('module', 'htmlpurifier');
       $infos = htmlpurifier_get_info();
@@ -143,7 +137,7 @@ class HTMLPurifierFilter extends FilterBase {
       );
     }
     else {
-      drupal_set_message($htmlpurifier_library['error message'], 'error', FALSE);
+      drupal_set_message($htmlpurifier_library['error message'], 'error');
     }
 
     return $form;
@@ -153,18 +147,21 @@ class HTMLPurifierFilter extends FilterBase {
    * {@inheritdoc}
    */
   public function process($text, $langcode, $cache, $cache_id) {
+    _htmlpurifier_process_text($text, $this, $cache, $cache_id);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getHTMLRestrictions() {
+    // @todo: Figure how to return the structured array of restricted HTML.
   }
 
   /**
    * {@inheritdoc}
    */
   public function tips($long = FALSE) {
+    return t('HTML tags will be transformed to conform to HTML standards.');
   }
 
 }

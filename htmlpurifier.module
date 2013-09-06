@@ -37,26 +37,6 @@ TEXT
   return $output;
 }
 
-/*
- * Implements hook_menu().
- */
-function htmlpurifier_menu() {
-  $items['admin/config/content/htmlpurifier'] = array(
-    'title' => 'HTML Purifier settings',
-    'description' => 'Configure overall settings for the HTML Purifier filters, including how they are cached.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array(
-      'htmlpurifier_admin_settings'
-    ),
-    'access arguments' => array(
-      'administer filters'
-    ),
-    'file' => 'htmlpurifier.admin.inc',
-  );
-
-  return $items;
-}
-
 /**
  * Implements hook_cron().
  */
@@ -151,10 +131,10 @@ function htmlpurifier_libraries_postload_callback(&$library, $version, $variant)
  */
 function htmlpurifier_check_version($force = FALSE) {
   if ($force || !variable_get('htmlpurifier_version_check_failed', FALSE)) {
-    // Maybe this should be changed in the future:
-    $result = drupal_http_request('http://htmlpurifier.org/live/VERSION');
-    if ($result->code == 200) {
-      $version = trim($result->data);
+    $request = Drupal::httpClient()->get('http://htmlpurifier.org/live/VERSION');
+    try {
+      $response = $request->send();
+      $version = trim($response->getBody(TRUE));
       if (variable_get('html_purifier_version_check_failed', FALSE) == TRUE) {
         variable_set('htmlpurifier_version_check_failed', FALSE);
       }
@@ -164,7 +144,7 @@ function htmlpurifier_check_version($force = FALSE) {
       }
       return $version;
     }
-    else {
+    catch (RequestException $e) {
       variable_set('htmlpurifier_version_check_failed', TRUE);
       // Delete any previously known "latest" version so that people can be
       // alerted if a problem appears on a previously working site.

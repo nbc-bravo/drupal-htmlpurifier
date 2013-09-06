@@ -12,12 +12,9 @@
 function htmlpurifier_requirements($phase) {
   $requirements = array();
 
-  // Ensure translations do not break at install time
-  $t = get_t();
-
   if ($phase == 'runtime') {
     // Default requirement title
-    $title = $t('HTML Purifier Library');
+    $title = t('HTML Purifier Library');
 
     $library = libraries_detect('htmlpurifier');
 
@@ -32,9 +29,7 @@ function htmlpurifier_requirements($phase) {
     }
     // If we can't check and retrieve the current version for some reason
     if (!$current_version) {
-      $description = $t(
-        'Unable to check for the latest version of the HTML Purifier library.  You will need to check manually at %url to find out if the version you are using is out of date.',
-        array('%url' => $library['download url']));
+      $description = t('Unable to check for the latest version of the HTML Purifier library.  You will need to check manually at %url to find out if the version you are using is out of date.', array('%url' => $library['download url']));
       $requirements['htmlpurifer_check']['title'] = $title;
       $requirements['htmlpurifer_check']['value'] = $our_version;
       $requirements['htmlpurifer_check']['description'] = $description;
@@ -42,12 +37,12 @@ function htmlpurifier_requirements($phase) {
     }
     // Is a newer version available?
     elseif (version_compare($current_version, $our_version, '>')) {
-      $description = $t(
-        'Your HTML Purifier library is out of date. The latest version is %version, which you can download from %url.',
+      $description = t('Your HTML Purifier library is out of date. The latest version is %version, which you can download from %url.',
         array(
           '%version' => $current_version,
           '%url' => $library['download url'],
-        ));
+        )
+      );
       $requirements['htmlpurifer_check']['title'] = $title;
       $requirements['htmlpurifer_check']['value'] = $our_version;
       $requirements['htmlpurifer_check']['description'] = $description;
@@ -58,18 +53,19 @@ function htmlpurifier_requirements($phase) {
     if ($library['installed']) {
       $requirements['htmlpurifer']['title'] = $title;
       $requirements['htmlpurifer']['value'] = $our_version;
-      $requirements['htmlpurifer']['description'] = $t('Installed version');
+      $requirements['htmlpurifer']['description'] = t('Installed version');
       $requirements['htmlpurifer']['severity'] = REQUIREMENT_OK;
     }
     // Not installed or unsupported version installed
     else {
       $supported_versions = array_keys($library['versions']);
       $error = $library['error message']
-        . $t('  Please download a supported version (%versions) from %url.',
+        . t('  Please download a supported version (%versions) from %url.',
           array(
             '%versions' => implode(' or ', $supported_versions),
             '%url' => $library['download url'],
-          ));
+          )
+      );
       $requirements['htmlpurifer']['title'] = $title;
       $requirements['htmlpurifer']['value'] = $our_version;
       $requirements['htmlpurifer']['description'] = $error;
