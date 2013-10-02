@@ -1,8 +1,11 @@
 <?php
 /**
  * @file
- * Cache handler that stores all data in drupals builtin cache
+ * Cache handler that stores all data in Drupal's built-in cache
  */
+
+use Drupal\Core\Cache\CacheBackendInterface;
+
 require_once 'HTMLPurifier/DefinitionCache.php';
 
 class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
@@ -10,7 +13,9 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
    * Add an object to the cache without overwriting
    */
   function add($def, $config) {
-    if (!$this->checkDefType($def)) return;
+    if (!$this->checkDefType($def)) {
+      return;
+    }
     $key = $this->generateKey($config);
 
     if ($this->fetchFromDrupalCache($key)) {
@@ -18,6 +23,7 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
       return FALSE;
     }
     $this->storeInDrupalCache($def, $key);
+
     return TRUE;
   }
 
@@ -25,10 +31,13 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
    * Unconditionally add an object to the cache, overwrites any existing object.
    */
   function set($def, $config) {
-    if (!$this->checkDefType($def)) return;
+    if (!$this->checkDefType($def)) {
+      return;
+    }
     $key = $this->generateKey($config);
 
     $this->storeInDrupalCache($def, $key);
+
     return TRUE;
   }
 
@@ -36,7 +45,9 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
    * Replace an object that already exists in the cache.
    */
   function replace($def, $config) {
-    if (!$this->checkDefType($def)) return;
+    if (!$this->checkDefType($def)) {
+      return;
+    }
     $key = $this->generateKey($config);
 
     if (!$this->fetchFromDrupalCache($key)) {
@@ -45,6 +56,7 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
     }
 
     $this->storeInDrupalCache($def, $key);
+
     return TRUE;
   }
 
@@ -53,6 +65,7 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
    */
   function get($config) {
     $key = $this->generateKey($config);
+
     return $this->fetchFromDrupalCache($key);
   }
 
@@ -62,11 +75,13 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
   function remove($config) {
     $key = $this->generateKey($config);
     cache_clear_all("htmlpurifier:$key", 'cache');
+
     return TRUE;
   }
 
   function flush($config) {
-    cache_clear_all("htmlpurifier:*", 'cache', TRUE);
+    cache()->deleteTags(array('htmlpurifier' => TRUE));
+
     return TRUE;
   }
 
@@ -83,13 +98,18 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
   }
 
   function fetchFromDrupalCache($key) {
-    $cached = cache_get("htmlpurifier:$key");
-    if ($cached) return unserialize($cached->data);
-    return FALSE;
+    $return = FALSE;
+
+    $cached = cache('filter')->get("htmlpurifier:$key");
+    if ($cached) {
+      $return = $cached->data;
+    }
+
+    return $return;
   }
 
   function storeInDrupalCache($def, $key) {
-    cache_set("htmlpurifier:$key", serialize($def), 'cache', CACHE_PERMANENT);
+    cache()->set("htmlpurifier:$key", serialize($def), CacheBackendInterface::CACHE_PERMANENT, array('htmlpurifier' => TRUE));
   }
 
 }

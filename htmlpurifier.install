@@ -65,7 +65,7 @@ function htmlpurifier_requirements($phase) {
             '%versions' => implode(' or ', $supported_versions),
             '%url' => $library['download url'],
           )
-      );
+        );
       $requirements['htmlpurifer']['title'] = $title;
       $requirements['htmlpurifer']['value'] = $our_version;
       $requirements['htmlpurifer']['description'] = $error;

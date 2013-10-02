@@ -7,9 +7,13 @@
 
 namespace Drupal\htmlpurifier\Plugin\Filter;
 
-use Drupal\filter\Annotation\Filter;
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Annotation\Translation;
+use Drupal\filter\Annotation\Filter;
 use Drupal\filter\Plugin\FilterBase;
+use Drupal\Core\Language\Language;
+
+use \HTMLPurifier_Printer_ConfigForm;
 
 /**
  * A filter that removes malicious HTML and ensures standards compliant output.
@@ -20,6 +24,9 @@ use Drupal\filter\Plugin\FilterBase;
  *   title = @Translation("HTMLPurifier"),
  *   description = @Translation("Removes malicious HTML code and ensures that the output is standards compliant."),
  *   type = FILTER_TYPE_HTML_RESTRICTOR,
+ *   settings = {
+ *     "htmlpurifier_config_name" = "htmlpurifier_basic"
+ *   },
  *   weight = 20
  * )
  */
@@ -30,11 +37,13 @@ class HTMLPurifierFilter extends FilterBase {
    * {@inheritdoc}
    */
   public function settingsForm(array $form, array &$form_state) {
-    $htmlpurifier_library = libraries_detect('htmlpurifier');
+    $htmlpurifier_library = libraries_load('htmlpurifier');
     if ($htmlpurifier_library['installed']) {
 
       // Dry run, testing for errors:
-      $this->process('dry run text', LANGUAGE_NOT_APPLICABLE, FALSE);
+      $text = 'dry run text';
+      $cache_id = Crypt::hmacBase64($text, 'htmlpurifier');
+      $this->process($text, Language::LANGCODE_NOT_SPECIFIED, TRUE, $cache_id);
 
       $module_path = drupal_get_path('module', 'htmlpurifier');
       $infos = htmlpurifier_get_info();
@@ -51,29 +60,27 @@ class HTMLPurifierFilter extends FilterBase {
       if (isset($form_state['values']['filters']['htmlpurifier']['settings']['htmlpurifier_config_name'])) {
         $config_name = $form_state['values']['filters']['htmlpurifier']['settings']['htmlpurifier_config_name'];
       }
-      elseif (isset($filter->settings['htmlpurifier_config_name'])) {
-        $config_name = $filter->settings['htmlpurifier_config_name'];
+      elseif (isset($this->settings['htmlpurifier_config_name'])) {
+        $config_name = $this->settings['htmlpurifier_config_name'];
       }
       else {
         $config_name = $defaults['htmlpurifier_config_name'];
       }
 
       // Check if we need to reset the form
-      $reset = isset($form_state['htmlpurifier']['htmlpurifier_config_reset']) ? $form_state['htmlpurifier']['htmlpurifier_config_reset']
-      : FALSE;
+      $reset = isset($form_state['htmlpurifier']['htmlpurifier_config_reset']) ? $form_state['htmlpurifier']['htmlpurifier_config_reset'] : FALSE;
 
       $form['htmlpurifier_help'] = array(
         '#type' => 'checkbox',
         '#title' => t('Display Help Text'),
-        '#default_value' => isset($filter->settings['htmlpurifier_help']) && !$reset ? $filter
-        ->settings['htmlpurifier_help'] : $infos[$config_name]['htmlpurifier_help'],
+        '#default_value' => isset($this->settings['htmlpurifier_help']) && !$reset ? $this->settings['htmlpurifier_help'] : $infos[$config_name]['htmlpurifier_help'],
         '#description' => t('If enabled, a short note will be added to the filter tips explaining that HTML will be transformed to conform with HTML standards. You may want to disable this option when the HTML Purifier is used to check the output of another filter like BBCode.'),
       );
 
       $form['htmlpurifier_filter_help'] = array(
         '#type' => 'textfield',
         '#title' => t('Help Text'),
-        '#default_value' => isset($filter->settings['htmlpurifier_filter_tips']) && !$reset ? $filter->settings['htmlpurifier_filter_tips'] : $infos[$config_name]['htmlpurifier_filter_tips'],
+        '#default_value' => isset($this->settings['htmlpurifier_filter_tips']) && !$reset ? $this->settings['htmlpurifier_filter_tips'] : $infos[$config_name]['htmlpurifier_filter_tips'],
         '#description' => t('Override the default help text to be something more useful.'),
         '#states' => array(
           // Hide the settings when the htmlpurifier_help checkbox is disabled.
@@ -115,11 +122,11 @@ class HTMLPurifierFilter extends FilterBase {
       $allowed = $infos[$config_name]['allowed'];
 
       // Generate the custom HTML Purifier Config form
-      $config = _htmlpurifier_get_config($format->format, $config_name, $reset);
-      $config_form = new HTMLPurifier_Printer_ConfigForm($filter->name . '_config', 'http://htmlpurifier.org/live/configdoc/plain.html#%s');
+      $config = _htmlpurifier_get_config($this, $config_name, $reset);
+      $config_form = new HTMLPurifier_Printer_ConfigForm($this->settings['htmlpurifier_config_name'] . '_config', 'http://htmlpurifier.org/live/configdoc/plain.html#%s');
 
       // This entire form element will be replaced whenever 'htmlpurifier_config_name' is updated.
-      $settings['htmlpurifier_config_form'] = array(
+      $form['htmlpurifier_config_form'] = array(
         '#markup' => $intro . $config_form->render($config, $allowed, FALSE),
         '#prefix' => '<div id="htmlpurifier_config_form">',
         '#suffix' => '</div>',
@@ -147,7 +154,7 @@ class HTMLPurifierFilter extends FilterBase {
    * {@inheritdoc}
    */
   public function process($text, $langcode, $cache, $cache_id) {
-    _htmlpurifier_process_text($text, $this, $cache, $cache_id);
+    _htmlpurifier_process_text($text, $this, $cache_id);
   }
 
   /**

@@ -1,12 +1,31 @@
 {
   'name': 'drupal/htmlpurifier',
+  'type': 'drupal-module',
   'description': 'Standards compliant HTML filter written in PHP',
+  'homepage': 'http://drupal.org/project/htmlpurifier',
   'license': 'GPL-2.0+',
+  'authors': [
+    {
+      'name': 'Lucas Hedding',
+      'email': 'lucashedding@1463982.no-reply.drupal.org',
+      'role': 'Project Co-maintainer'
+    },
+    {
+      'name': 'See contributors',
+      'homepage': 'https://drupal.org/node/198285/committers',
+      'role': 'Developer'
+    }
+  ],
+  'support': {
+    'issues': 'http://drupal.org/project/issues/htmlpurifier'
+  },
   'require': {
     'drupal/drupal': '8.*'
   },
   'autoload': {
-    'psr-0': { 'HTMLPurifier': 'library/' },
+    'psr-0': {
+      'HTMLPurifier': 'library/'
+    },
     'files': ['library/HTMLPurifier.composer.php']
   }
 }
