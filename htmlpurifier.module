@@ -387,6 +387,10 @@ function _htmlpurifier_get_config($format = 0) {
     $config->mergeArrayFromForm($config_data, FALSE, TRUE, FALSE);
   }
 
+  // Allow other modules to alter the HTML definition.
+  $html_definition = $config->getHTMLDefinition(TRUE);
+  drupal_alter('htmlpurifier_html_definition', $html_definition);
+
   return $config;
 
 }
