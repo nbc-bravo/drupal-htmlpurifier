@@ -8,14 +8,9 @@
  * Implements hook_schema().
  */
 function htmlpurifier_schema() {
-  $t = 't';
   $schema['cache_htmlpurifier'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_htmlpurifier']['description'] = $t(<<<DESCRIPTION
-Cache table for the HTML Purifier module just like cache_filter, except that
-cached text is stored permanently until flushed or manually invalidated.
-This helps prevent recurrent cache slams on pages with lots of segments of HTML.
-DESCRIPTION
-  );
+  $schema['cache_htmlpurifier']['description'] = 'Cache table for the HTML Purifier module just like cache_filter, except that cached text is stored permanently until flushed or manually invalidated. This helps prevent recurrent cache slams on pages with lots of segments of HTML.';
+
   return $schema;
 }
 

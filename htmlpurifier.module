@@ -6,6 +6,8 @@
  */
 
 use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\Language\Language;
+use Drupal\Core\Cache\Cache;
 
 // -- HOOK IMPLEMENTATIONS -------------------------------------------------- //
 
@@ -264,7 +266,7 @@ function htmlpurifier_get_info() {
           }
 
           // Define the language direction
-          if (defined('\Drupal\Core\Language\Language::LANGUAGE_RTL') && \Drupal::languageManager()->getCurrentLanguage()->direction === \Drupal\Core\Language\Language::LANGUAGE_RTL) {
+          if (\Drupal::languageManager()->getCurrentLanguage()->direction === Language::LANGUAGE_RTL) {
             $info[$name]['settings'] += array(
               'Attr.DefaultTextDir' => 'rtl'
             );
@@ -370,7 +372,7 @@ function _htmlpurifier_add_css(&$field, $nid) {
 
       // If we had to update CSSTidy blocks, cache the results
       if ($old->data != $styles) {
-        \Drupal::cache('cache_htmlpurifier')->set($cid, $styles, \Drupal\Core\Cache\Cache::PERMANENT);
+        \Drupal::cache('cache_htmlpurifier')->set($cid, $styles, Cache::PERMANENT);
       }
     }
   }
@@ -445,10 +447,10 @@ function _htmlpurifier_process_text($text, $filter, $cache_id, $cache = TRUE) {
  * @return
  *    Instance of HTMLPurifier_Config.
  */
-function _htmlpurifier_get_config($format_name, $config_name, $reset = FALSE) {
+function _htmlpurifier_get_config($filter, $config_name = NULL, $reset = FALSE) {
 
   $infos = htmlpurifier_get_info();
-  $filters = filter_list_format($format_name);
+  $filters = filter_list_format($filter);
   $config = HTMLPurifier_Config::createDefault();
 
   $settings = $infos[$config_name]['settings'];
@@ -508,7 +510,7 @@ function _htmlpurifier_settings($form, &$form_state, $filter, $format, $defaults
   if ($htmlpurifier_library['installed']) {
 
     // Dry run, testing for errors:
-    _htmlpurifier_process_text('dry run text', $filter, $format, \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED, FALSE);
+    _htmlpurifier_process_text('dry run text', $filter, $format, Language::LANGCODE_NOT_SPECIFIED, FALSE);
 
     $module_path = drupal_get_path('module', 'htmlpurifier');
     $infos = htmlpurifier_get_info();
