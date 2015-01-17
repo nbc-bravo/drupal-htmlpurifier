@@ -5,16 +5,6 @@
  */
 
 /**
- * Implements hook_schema().
- */
-function htmlpurifier_schema() {
-  $schema['cache_htmlpurifier'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_htmlpurifier']['description'] = 'Cache table for the HTML Purifier module just like cache_filter, except that cached text is stored permanently until flushed or manually invalidated. This helps prevent recurrent cache slams on pages with lots of segments of HTML.';
-
-  return $schema;
-}
-
-/**
  * Implements hook_requirements().
  *
  * Checks the version of HTML Purifier on install and issues an error if there is a problem
@@ -26,7 +16,6 @@ function htmlpurifier_requirements($phase) {
     // Default requirement title
     $title = t('HTML Purifier Library');
 
-    $library = libraries_detect('htmlpurifier');
 
     // Grab the versions of HTML Purifier
     $current_version = \Drupal::config('htmlpurifier.settings')->get('htmlpurifier_version_current');
