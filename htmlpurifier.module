@@ -6,7 +6,9 @@
  */
 
 use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\Language\Language;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Cache\Cache;
 
 // -- HOOK IMPLEMENTATIONS -------------------------------------------------- //
 
@@ -232,11 +234,11 @@ function htmlpurifier_htmlpurifier_info() {
  * Return a list of all htmlpurifier_info provided by modules.
  */
 function htmlpurifier_get_info() {
-  $infos = & drupal_static(__FUNCTION__, array());
+  $infos = &drupal_static(__FUNCTION__, array());
 
   if (empty($infos)) {
-    foreach (module_implements('htmlpurifier_info') as $module) {
-      $info = module_invoke($module, 'htmlpurifier_info');
+    foreach (\Drupal::moduleHandler()->getImplementations('htmlpurifier_info') as $module) {
+      $info = \Drupal::moduleHandler()->invoke($module, 'htmlpurifier_info');
       if (isset($info) && is_array($info)) {
         // Assign the name of the module implementing the htmlpurifier_info and ensure
         // default values.
@@ -265,7 +267,7 @@ function htmlpurifier_get_info() {
           }
 
           // Define the language direction
-          if (defined('LANGUAGE_RTL') && $GLOBALS['language']->direction === LANGUAGE_RTL) {
+          if (\Drupal::languageManager()->getCurrentLanguage()->direction === Language::LANGUAGE_RTL) {
             $info[$name]['settings'] += array(
               'Attr.DefaultTextDir' => 'rtl'
             );
@@ -275,7 +277,7 @@ function htmlpurifier_get_info() {
       }
     }
     // Allow modules to alter htmlpurifier_info definitions.
-    drupal_alter('htmlpurifier_info', $infos);
+    \Drupal::moduleHandler()->alter('htmlpurifier_info', $infos);
   }
 
   return $infos;
@@ -335,7 +337,7 @@ function _htmlpurifier_add_css(&$field, $nid) {
   // If there's an HTML Purifier Cache #, we need to load CSSTidy blocks
   if ($cache_match == 1) {
     $cid = 'css:' . $cache_matches[1];
-    $old = cache_get($cid, 'cache_htmlpurifier');
+    $old = \Drupal::cache('cache_htmlpurifier')->get($cid);
 
     // We should always have some cached style blocks to load, but if we don't, just bail
     if ($old) {
@@ -371,7 +373,7 @@ function _htmlpurifier_add_css(&$field, $nid) {
 
       // If we had to update CSSTidy blocks, cache the results
       if ($old->data != $styles) {
-        cache_set($cid, $styles, 'cache_htmlpurifier', CACHE_PERMANENT);
+        \Drupal::cache('cache_htmlpurifier')->set($cid, $styles, Cache::PERMANENT);
       }
     }
   }
@@ -446,9 +448,10 @@ function _htmlpurifier_process_text($text, $filter, $cache_id, $cache = TRUE) {
  * @return
  *    Instance of HTMLPurifier_Config.
  */
-function _htmlpurifier_get_config($filter, $config_name, $reset = FALSE) {
+function _htmlpurifier_get_config($filter, $config_name = NULL, $reset = FALSE) {
 
   $infos = htmlpurifier_get_info();
+  $filters = filter_list_format($filter);
   $config = HTMLPurifier_Config::createDefault();
 
   $settings = $infos[$config_name]['settings'];
@@ -456,14 +459,16 @@ function _htmlpurifier_get_config($filter, $config_name, $reset = FALSE) {
     $config->set($key, $value);
   }
 
-  $config_data = isset($filter->settings['htmlpurifier_config']) && !$reset ? $filter->settings['htmlpurifier_config'] : array();
+  $config_data = isset($filters['htmlpurifier']->settings['htmlpurifier_config']) && !$reset ? $filters['htmlpurifier']
+    ->settings['htmlpurifier_config'] : array();
 
   // Need to do a little more if Filter.ExtractStyleBlocks is set
   if (!empty($config_data['Filter.ExtractStyleBlocks'])) {
     $library = libraries_detect('csstidy');
     if (!$library['installed']) {
       $config_data['Filter.ExtractStyleBlocks'] = '0';
-      $error = t('Could not enable ExtractStyleBlocks because CSSTidy library was not found, detected or the version is unsupported. Please download a supported version from %url.',
+      $error = t(
+          'Could not enable ExtractStyleBlocks because CSSTidy library was not found, detected or the version is unsupported. Please download a supported version from %url.',
         array(
           '%url' => $library['download url']
         ));
@@ -472,6 +477,10 @@ function _htmlpurifier_get_config($filter, $config_name, $reset = FALSE) {
   }
   // {FALSE, TRUE, FALSE} = {no index, everything is allowed, don't do mq fix}
   $config->mergeArrayFromForm($config_data, FALSE, TRUE, FALSE);
+
+  // Allow other modules to alter the HTML definition.
+  $html_definition = $config->getHTMLDefinition(TRUE);
+  \Drupal::moduleHandler()->alter('htmlpurifier_html_definition', $html_definition);
 
   return $config;
 }
@@ -502,7 +511,7 @@ function _htmlpurifier_settings($form, &$form_state, $filter, $format, $defaults
   if ($htmlpurifier_library['installed']) {
 
     // Dry run, testing for errors:
-    _htmlpurifier_process_text('dry run text', $filter, $format, LANGUAGE_NONE, FALSE);
+    _htmlpurifier_process_text('dry run text', $filter, $format, Language::LANGCODE_NOT_SPECIFIED, FALSE);
 
     $module_path = drupal_get_path('module', 'htmlpurifier');
     $infos = htmlpurifier_get_info();

@@ -80,7 +80,7 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
   }
 
   function flush($config) {
-    cache()->deleteTags(array('htmlpurifier' => TRUE));
+    cache_clear_all("htmlpurifier:*", 'cache', TRUE);
 
     return TRUE;
   }
@@ -98,18 +98,15 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
   }
 
   function fetchFromDrupalCache($key) {
-    $return = FALSE;
-
-    $cached = cache('filter')->get("htmlpurifier:$key");
+    $cached = \Drupal::cache()->get("htmlpurifier:$key");
     if ($cached) {
-      $return = $cached->data;
+      return unserialize($cached->data);
     }
-
-    return $return;
+    return FALSE;
   }
 
   function storeInDrupalCache($def, $key) {
-    cache()->set("htmlpurifier:$key", serialize($def), CacheBackendInterface::CACHE_PERMANENT, array('htmlpurifier' => TRUE));
+    \Drupal::cache('cache')->set("htmlpurifier:$key", serialize($def), \Drupal\Core\Cache\Cache::PERMANENT);
   }
 
 }
