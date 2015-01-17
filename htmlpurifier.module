@@ -7,6 +7,7 @@
 
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Language\Language;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Cache\Cache;
 
 // -- HOOK IMPLEMENTATIONS -------------------------------------------------- //
@@ -23,10 +24,10 @@ function htmlpurifier_flush_caches() {
 /**
  * Implements hook_help().
  */
-function htmlpurifier_help($path, $arg) {
+function htmlpurifier_help($route_name, RouteMatchInterface $route_match) {
   $output = NULL;
-  switch ($path) {
-    case 'admin/help#htmlpurifier':
+  switch ($route_name) {
+    case 'help.page.htmlpurifier':
       $output = t(
         <<<TEXT
   The HTML Purifier Drupal module provides a text filter that removes
@@ -34,7 +35,7 @@ malicious HTML and ensures standards compliant output.  You can modify
 text formats at <a href="@formats">the format configurations page</a>.
 TEXT
         , array(
-          '@formats' => url('admin/config/content/formats')
+          '@formats' => \Drupal::url('filter.admin_overview')
         ));
       break;
   }
