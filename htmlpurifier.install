@@ -16,10 +16,9 @@ function htmlpurifier_requirements($phase) {
     // Default requirement title
     $title = t('HTML Purifier Library');
 
-    $library = libraries_detect('htmlpurifier');
 
     // Grab the versions of HTML Purifier
-    $current_version = variable_get('htmlpurifier_version_current', FALSE);
+    $current_version = \Drupal::config('htmlpurifier.settings')->get('htmlpurifier_version_current');
     $our_version = isset($library['version']) ? $library['version'] : '';
 
     // If we aren't at a current version, check again...
