@@ -1,14 +1,26 @@
 <?php
 /**
  * @file
- * Cache handler that stores all data in Drupal's built-in cache
+ * Cache handler that stores all data in Drupal's built-in cache.
  */
 
-use Drupal\Core\Cache\CacheBackendInterface;
+namespace Drupal\htmlpurifier\Cache;
 
-require_once 'HTMLPurifier/DefinitionCache.php';
+class HTMLPurifierDefinitionCacheDrupal extends \HTMLPurifier_DefinitionCache {
 
-class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
+  /**
+   * The cache backend.
+   *
+   * @var \Drupal\Core\Cache\CacheBackendInterface
+   */
+  protected $cache;
+
+  public function __construct($type) {
+    parent::__construct($type);
+
+    $this->cache = \Drupal::cache('htmlpurifier');
+  }
+
   /**
    * Add an object to the cache without overwriting
    */
@@ -74,31 +86,23 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
    */
   function remove($config) {
     $key = $this->generateKey($config);
-    cache_clear_all("htmlpurifier:$key", 'cache');
+    $this->cache->delete($key);
 
     return TRUE;
   }
 
   function flush($config) {
-    cache_clear_all("htmlpurifier:*", 'cache', TRUE);
+    $this->cache->deleteAll();
 
     return TRUE;
   }
 
   function cleanup($config) {
-    // TODO: This does not work with the pluggable cache system in Drupal 7,
-    // since it assumes a database cache is being used.
-    $res = db_query("SELECT cid FROM {cache} WHERE cid LIKE :cid", array(':cid' => 'htmlpurifier:%'));
-    foreach ($res as $row) {
-      $key = substr($row->cid, 13); // 13 == strlen('htmlpurifier:')
-      if ($this->isOld($key, $config)) {
-        cache_clear_all($row->cid, 'cache');
-      }
-    }
+    $this->cache->garbageCollection();
   }
 
   function fetchFromDrupalCache($key) {
-    $cached = \Drupal::cache()->get("htmlpurifier:$key");
+    $cached = $this->cache->get($key);
     if ($cached) {
       return unserialize($cached->data);
     }
@@ -106,7 +110,7 @@ class HTMLPurifier_DefinitionCache_Drupal extends HTMLPurifier_DefinitionCache {
   }
 
   function storeInDrupalCache($def, $key) {
-    \Drupal::cache('cache')->set("htmlpurifier:$key", serialize($def), \Drupal\Core\Cache\Cache::PERMANENT);
+    $this->cache->set($key, serialize($def));
   }
 
 }

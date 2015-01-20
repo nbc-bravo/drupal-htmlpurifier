@@ -427,6 +427,10 @@ function _htmlpurifier_process_text($text, $filter) {
  *    Instance of HTMLPurifier_Config.
  */
 function _htmlpurifier_get_config($filter, $config_name = NULL, $reset = FALSE) {
+  $module_path = drupal_get_path('module', 'htmlpurifier');
+  require_once "$module_path/src/Cache/HTMLPurifierDefinitionCacheDrupal.php";
+  $factory = HTMLPurifier_DefinitionCacheFactory::instance();
+  $factory->register('Drupal', 'Drupal\htmlpurifier\Cache\HTMLPurifierDefinitionCacheDrupal');
 
   if (empty($config_name)) {
     $config_name = $this->settings['htmlpurifier_config_name'];
