@@ -9,6 +9,7 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Cache\Cache;
+use Drupal\htmlpurifier\Cache\HTMLPurifierDefinitionCacheDrupal;
 
 use \HTMLPurifier_Config;
 
@@ -427,6 +428,14 @@ function _htmlpurifier_process_text($text, $filter) {
  *    Instance of HTMLPurifier_Config.
  */
 function _htmlpurifier_get_config($filter, $config_name = NULL, $reset = FALSE) {
+  // We want a type of HTML, not CSS or other type.
+  $definition_type = 'HTML';
+  // Must create a dummy cache backend because the htmlpurifier library
+  // class_exists prior to creating a class instance.
+  $cache_backend = new HTMLPurifierDefinitionCacheDrupal($definition_type);
+  $factory = HTMLPurifier_DefinitionCacheFactory::instance();
+  //Register a cache definition for internal workings of htmlpurifier library.
+  $factory->register('Drupal', 'Drupal\htmlpurifier\Cache\HTMLPurifierDefinitionCacheDrupal');
 
   if (empty($config_name)) {
     $config_name = $this->settings['htmlpurifier_config_name'];
@@ -457,7 +466,7 @@ function _htmlpurifier_get_config($filter, $config_name = NULL, $reset = FALSE) 
   $config->mergeArrayFromForm($config_data, FALSE, TRUE, FALSE);
 
   // Allow other modules to alter the HTML definition.
-  $html_definition = $config->getHTMLDefinition(TRUE);
+  $html_definition = $config->getDefinition($definition_type, TRUE);
   \Drupal::moduleHandler()->alter('htmlpurifier_html_definition', $html_definition);
 
   return $config;
