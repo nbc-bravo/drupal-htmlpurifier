@@ -41,7 +41,7 @@ class HtmlPurifierConfigForm extends ConfigFormBase {
     $form['htmlpurifier_clear_cache'] = array(
       '#type' => 'submit',
       '#value' => t('Clear cache (Warning: Can result in performance degradation)'),
-      '#submit' => array('_htmlpurifier_clear_cache')
+      '#submit' => array('_htmlpurifier_clear_cache'),
     );
     return parent::buildForm($form, $form_state);
   }
@@ -50,8 +50,8 @@ class HtmlPurifierConfigForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // Resave all text formats so that the new cache settings for each format are
-    // recorded.
+    // Resave all text formats so that the new cache settings for each format
+    // are recorded.
     // TODO: There should be a better way to do this.
     foreach (filter_formats() as $format) {
       $format->filters = $filter_format->filters($format->format);

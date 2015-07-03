@@ -53,7 +53,8 @@ class HTMLPurifierFilter extends FilterBase {
     );
 
     // An AJAX request calls the form builder function for every change.
-    // Here we grab the config_name so we can grab applicable data from the htmlpurifier_info
+    // Here we grab the config_name so we can grab applicable data from the
+    // htmlpurifier_info
     if (isset($form_state['values']['filters']['htmlpurifier']['settings']['htmlpurifier_config_name'])) {
       $config_name = $form_state['values']['filters']['htmlpurifier']['settings']['htmlpurifier_config_name'];
     }
@@ -122,7 +123,8 @@ class HTMLPurifierFilter extends FilterBase {
     $config = _htmlpurifier_get_config($this, $config_name, $reset);
     $config_form = new HTMLPurifier_Printer_ConfigForm($this->settings['htmlpurifier_config_name'] . '_config', 'http://htmlpurifier.org/live/configdoc/plain.html#%s');
 
-    // This entire form element will be replaced whenever 'htmlpurifier_config_name' is updated.
+    // This entire form element will be replaced whenever
+    // 'htmlpurifier_config_name' is updated.
     $form['htmlpurifier_config_form'] = array(
       '#markup' => $intro . $config_form->render($config, $allowed, FALSE),
       '#prefix' => '<div id="htmlpurifier_config_form">',

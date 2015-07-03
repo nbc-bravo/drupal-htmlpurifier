@@ -15,9 +15,11 @@ class HTMLPurifierDefinitionCacheDrupal extends \HTMLPurifier_DefinitionCache {
    */
   protected $cache;
 
+  /**
+   * {@inheritdoc}
+   */
   public function __construct($type) {
     parent::__construct($type);
-
     $this->cache = \Drupal::cache('htmlpurifier');
   }
 
