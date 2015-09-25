@@ -1,13 +1,13 @@
 {
   "name": "drupal/htmlpurifier",
   "type": "drupal-module",
-  "description": "Drupal Commerce is a flexible eCommerce solution.",
-  "homepage": "Standards compliant HTML filter written in PHP",
+  "description": "Standards compliant HTML filter written in PHP",
+  "homepage": "https://www.drupal.org/project/htmlpurifier",
   "license": "GPL-2.0+",
   "support": {
-    "issues": "http://drupal.org/project/issues/htmlpurifier"
+    "issues": "https://www.drupal.org/project/issues/htmlpurifier"
   },
   "require": {
-    "ezyang/htmlpurifier": "4.6.0"
+    "ezyang/htmlpurifier": "4.6.*"
   }
 }
