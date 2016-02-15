@@ -10,6 +10,7 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\htmlpurifier\Cache\HTMLPurifierDefinitionCacheDrupal;
+use Drupal\Core\Url;
 
 use \HTMLPurifier_Config;
 
@@ -31,15 +32,10 @@ function htmlpurifier_help($route_name, RouteMatchInterface $route_match) {
   $output = NULL;
   switch ($route_name) {
     case 'help.page.htmlpurifier':
-      $output = t(
-        <<<TEXT
-  The HTML Purifier Drupal module provides a text filter that removes
-malicious HTML and ensures standards compliant output.  You can modify
-text formats at <a href="@formats">the format configurations page</a>.
-TEXT
-        , array(
-          '@formats' => \Drupal::url('filter.admin_overview')
-        ));
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The HTML Purifier Drupal module provides a text filter that removes malicious HTML and ensures standards compliant output.You can modify text formats at <a href=":formats">the format configurations page</a>.', array(':formats' => Url::fromRoute('filter.admin_overview'))) . '</p>';
+      return $output;
       break;
   }
 
