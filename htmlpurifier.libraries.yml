@@ -1,0 +1,10 @@
+config_form:
+  version: 1.x
+  js:
+    js/config-form.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
+  css:
+    theme:
+      css/config-form.css: {}
