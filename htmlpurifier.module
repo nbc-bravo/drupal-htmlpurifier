@@ -174,3 +174,28 @@ function _htmlpurifier_get_config(FilterBase $filter, $config_name = NULL, $rese
 function _htmlpurifer_config_form_ajax_callback($form, $form_state) {
   return $form['filters']['settings']['htmlpurifier']['htmlpurifier_config_form'];
 }
+
+/**
+ * Sort by weight of the htmlpurifier info
+ *
+ * @param mixed array $a
+ * @param mixed array $b
+ * @return number
+ */
+function _htmlpurifier_option_cmp($a, $b) {
+  return $a['weight'] - $b['weight'];
+}
+
+/**
+ *  Implements hook_theme().
+ */
+function htmlpurifier_theme() {
+  return [
+    'htmlpurifier_config_form' => [
+      'variables' => [
+        'rendered_form' => '',
+        'description_message' => '',
+      ],
+    ],
+  ];
+}

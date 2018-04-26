@@ -4,6 +4,7 @@ namespace Drupal\htmlpurifier\Plugin\Filter;
 
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
@@ -99,26 +100,18 @@ class HtmlPurifierFilter extends FilterBase {
     $allowed = $info_list[$config_name]['allowed'];
     $rendered_form = $config_form->render($config, $allowed, FALSE);
 
-    $intro = '<div class="form-item"><div class="description">'
-      . t('Please click on a directive name for more information on what it does before enabling or changing anything!
+    $description_message = t('Please please click on a directive name for more information on what it does before enabling or changing anything!
         Changes will not apply to old entries until you clear the cache (see the <a href="@url">settings page</a>).',
-        array('@url' => Url::fromRoute('htmlpurifier.config')->toString())) . '</div></div>';
+      array('@url' => Url::fromRoute('htmlpurifier.config')->toString()));
 
     // This entire form element will be replaced whenever
     // 'htmlpurifier_config_name' is updated.
-    $form['htmlpurifier_config_form'] = array(
-      '#markup' => $intro . $rendered_form,
-      '#allowed_tags' => array_merge(Xss::getAdminTagList(), [
-        'label',
-        'input',
-        'textarea',
-        'select',
-        'option',
-      ]),
-      '#prefix' => '<div id="htmlpurifier_config_form">',
-      '#suffix' => '</div>',
+    $form['htmlpurifier_config_form'] = [
+      '#theme' => 'htmlpurifier_config_form',
+      '#rendered_form' => Markup::create($rendered_form),
+      '#description_message' => $description_message,
       //'#after_build' => array('_htmlpurifier_set_config'),
-    );
+    ];
     // @TODO: Figure out if this would replace the #after_build and why we would need it
     //$this->setConfig($form_state);
 
