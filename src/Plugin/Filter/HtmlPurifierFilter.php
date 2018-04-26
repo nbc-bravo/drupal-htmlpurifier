@@ -101,7 +101,7 @@ class HtmlPurifierFilter extends FilterBase {
     $intro = '<div class="form-item"><div class="description">'
       . t('Please click on a directive name for more information on what it does before enabling or changing anything!
         Changes will not apply to old entries until you clear the cache (see the <a href="@url">settings page</a>).',
-        array('@url' => Url::fromRoute('htmlpurifier.config'))) . '</div></div>';
+        array('@url' => Url::fromRoute('htmlpurifier.config')->toString())) . '</div></div>';
 
     // This entire form element will be replaced whenever
     // 'htmlpurifier_config_name' is updated.
