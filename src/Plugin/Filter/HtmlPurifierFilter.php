@@ -2,6 +2,7 @@
 
 namespace Drupal\htmlpurifier\Plugin\Filter;
 
+use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\filter\FilterProcessResult;
@@ -107,6 +108,13 @@ class HtmlPurifierFilter extends FilterBase {
     // 'htmlpurifier_config_name' is updated.
     $form['htmlpurifier_config_form'] = array(
       '#markup' => $intro . $rendered_form,
+      '#allowed_tags' => array_merge(Xss::getAdminTagList(), [
+        'label',
+        'input',
+        'textarea',
+        'select',
+        'option',
+      ]),
       '#prefix' => '<div id="htmlpurifier_config_form">',
       '#suffix' => '</div>',
       //'#after_build' => array('_htmlpurifier_set_config'),
