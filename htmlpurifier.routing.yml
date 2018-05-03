@@ -1,6 +1,0 @@
-htmlpurifier.config:
-  path: '/admin/config/content/htmlpurifier'
-  defaults:
-    _form: '\Drupal\htmlpurifier\Form\HtmlPurifierConfigForm'
-  requirements:
-    _permission: 'administer filters'
