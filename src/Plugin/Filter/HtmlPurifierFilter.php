@@ -2,8 +2,12 @@
 
 namespace Drupal\htmlpurifier\Plugin\Filter;
 
+use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Config\ImmutableConfig;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @Filter(
@@ -13,7 +17,36 @@ use Drupal\filter\Plugin\FilterBase;
  *   type = Drupal\filter\Plugin\FilterInterface::TYPE_HTML_RESTRICTOR
  * )
  */
-class HtmlPurifierFilter extends FilterBase {
+class HtmlPurifierFilter extends FilterBase implements ContainerFactoryPluginInterface {
+
+  /**
+   * htmlpurifier.config_directives configuration settings array
+   *
+   * @var array
+   */
+  protected $drupalConfig;
+
+  public function setDrupalConfig(array $config) {
+    $this->drupalConfig = $config;
+  }
+
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('config.factory')->get('htmlpurifier.config_directives')->get()
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, array $drupal_config) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+
+    $this->drupalConfig = $drupal_config;
+  }
 
   /**
    * {@inheritdoc}
@@ -23,8 +56,7 @@ class HtmlPurifierFilter extends FilterBase {
     $config = \HTMLPurifier_Config::createDefault();
 
     // Get and apply the configuration stored in Drupal.
-    $drupal_config = \Drupal::config('htmlpurifier.config_directives')->get();
-    $this->applyConfigSettings($config, $drupal_config);
+    $this->applyConfigSettings($config, $this->drupalConfig);
 
     $purifier = new \HTMLPurifier($config);
     $purified_text = $purifier->purify($text);
