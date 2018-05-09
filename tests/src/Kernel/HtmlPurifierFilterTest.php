@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\htmlpurifier\Kernel;
 
+use Drupal\Component\Serialization\Yaml;
 use Drupal\filter\FilterPluginCollection;
 use Drupal\KernelTests\KernelTestBase;
 
@@ -40,10 +41,12 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $processed = $this->filter->process($input, 'und')->getProcessedText();
     self::assertSame($expected, $processed);
 
-    // Set configuration to remove empty tags.
-    $config = \Drupal::service('config.factory')->getEditable('htmlpurifier.config_directives');
-    $config->set('AutoFormat.RemoveEmpty', TRUE)->save();
-    $this->filter->setDrupalConfig(\Drupal::config('htmlpurifier.config_directives')->get());
+    $configuration = [
+      'AutoFormat' => [
+        'RemoveEmpty' => TRUE,
+      ],
+    ];
+    $this->filter->settings['htmlpurifier_configuration'] = Yaml::encode($configuration);
 
     $expected = '';
     $processed = $this->filter->process($input, 'und')->getProcessedText();

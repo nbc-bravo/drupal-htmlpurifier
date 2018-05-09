@@ -2,12 +2,10 @@
 
 namespace Drupal\htmlpurifier\Plugin\Filter;
 
-use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Config\ImmutableConfig;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Component\Serialization\Yaml;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @Filter(
@@ -17,69 +15,53 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   type = Drupal\filter\Plugin\FilterInterface::TYPE_HTML_RESTRICTOR
  * )
  */
-class HtmlPurifierFilter extends FilterBase implements ContainerFactoryPluginInterface {
-
-  /**
-   * htmlpurifier.config_directives configuration settings array
-   *
-   * @var array
-   */
-  protected $drupalConfig;
-
-  public function setDrupalConfig(array $config) {
-    $this->drupalConfig = $config;
-  }
-
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition,
-      $container->get('config.factory')->get('htmlpurifier.config_directives')->get()
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, array $drupal_config) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-
-    $this->drupalConfig = $drupal_config;
-  }
+class HtmlPurifierFilter extends FilterBase {
 
   /**
    * {@inheritdoc}
    */
   public function process($text, $langcode) {
-    /* @var $config \HTMLPurifier_Config */
-    $config = \HTMLPurifier_Config::createDefault();
+    /* @var $purifier_config \HTMLPurifier_Config */
+    $purifier_config = \HTMLPurifier_Config::createDefault();
 
-    // Get and apply the configuration stored in Drupal.
-    $this->applyConfigSettings($config, $this->drupalConfig);
+    // Get and apply the configuration set in the filter form.
+    if (!empty($this->settings['htmlpurifier_configuration'])) {
+      $settings = Yaml::decode($this->settings['htmlpurifier_configuration']);
+      foreach ($settings as $namespace => $directives) {
+        foreach ($directives as $key => $value) {
+          $purifier_config->set("$namespace.$key", $value);
+        }
+      }
+    }
 
-    $purifier = new \HTMLPurifier($config);
+    $purifier = new \HTMLPurifier($purifier_config);
     $purified_text = $purifier->purify($text);
 
     return new FilterProcessResult($purified_text);
   }
 
   /**
-   * Applies the configuration settings in the HTMLPurifier_Config object.
-   *
-   * @param \HTMLPurifier_Config $config
-   * @param array $settings
-   * @param string $namespace
+   * {@inheritdoc}
    */
-  protected function applyConfigSettings(\HTMLPurifier_Config $config, $settings, $namespace = '') {
-    foreach ($settings as $key => $value) {
-      if (is_array($value)) {
-         $namespace .= "$key.";
-         $this->applyConfigSettings($config, $value, $namespace);
-      }
-      else {
-        $config->set($namespace . $key, $value);
-      }
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    if (empty($this->settings['htmlpurifier_configuration'])) {
+      /* @var $purifier_config \HTMLPurifier_Config */
+      $purifier_config = \HTMLPurifier_Config::createDefault();
+      $default_value = Yaml::encode($purifier_config->getAll());
     }
+    else {
+      $default_value = $this->settings['htmlpurifier_configuration'];
+    }
+
+    $form['htmlpurifier_configuration'] = [
+      '#type' => 'textarea',
+      '#rows' => 50,
+      '#title' => t('HTML Purifier Configuration'),
+      '#description' => t('These are the config directives in YAML format, according to the <a href="@url">HTML Purifier documentation</a>', ['@url' => 'http://htmlpurifier.org/live/configdoc/plain.html']),
+      '#default_value' => $default_value,
+    ];
+
+    return $form;
   }
+
 }

@@ -1,8 +1,0 @@
-htmlpurifier.config_directives:
-  type: config_object
-  mapping:
-    AutoFormat:
-      type: mapping
-      mapping:
-        RemoveEmpty:
-          type: boolean
