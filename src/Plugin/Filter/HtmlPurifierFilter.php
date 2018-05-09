@@ -21,20 +21,20 @@ class HtmlPurifierFilter extends FilterBase {
    * {@inheritdoc}
    */
   public function process($text, $langcode) {
-    /* @var $config \HTMLPurifier_Config */
-    $config = \HTMLPurifier_Config::createDefault();
+    /* @var $purifier_config \HTMLPurifier_Config */
+    $purifier_config = \HTMLPurifier_Config::createDefault();
 
     // Get and apply the configuration set in the filter form.
     if (!empty($this->settings['htmlpurifier_configuration'])) {
       $settings = Yaml::decode($this->settings['htmlpurifier_configuration']);
       foreach ($settings as $namespace => $directives) {
         foreach ($directives as $key => $value) {
-          $config->set("$namespace.$key", $value);
+          $purifier_config->set("$namespace.$key", $value);
         }
       }
     }
 
-    $purifier = new \HTMLPurifier($config);
+    $purifier = new \HTMLPurifier($purifier_config);
     $purified_text = $purifier->purify($text);
 
     return new FilterProcessResult($purified_text);
@@ -45,12 +45,12 @@ class HtmlPurifierFilter extends FilterBase {
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     if (empty($this->settings['htmlpurifier_configuration'])) {
-      /* @var $config \HTMLPurifier_Config */
-      $config = \HTMLPurifier_Config::createDefault();
-      $configuration = Yaml::encode($config->getAll());
+      /* @var $purifier_config \HTMLPurifier_Config */
+      $purifier_config = \HTMLPurifier_Config::createDefault();
+      $default_value = Yaml::encode($purifier_config->getAll());
     }
     else {
-      $configuration = $this->settings['htmlpurifier_configuration'];
+      $default_value = $this->settings['htmlpurifier_configuration'];
     }
 
     $form['htmlpurifier_configuration'] = [
@@ -58,7 +58,7 @@ class HtmlPurifierFilter extends FilterBase {
       '#rows' => 50,
       '#title' => t('HTML Purifier Configuration'),
       '#description' => t('These are the config directives in YAML format, according to the <a href="@url">HTML Purifier documentation</a>', ['@url' => 'http://htmlpurifier.org/live/configdoc/plain.html']),
-      '#default_value' => $configuration,
+      '#default_value' => $default_value,
     ];
 
     return $form;

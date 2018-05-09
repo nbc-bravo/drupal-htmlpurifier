@@ -1,7 +1,0 @@
-filter_settings.htmlpurifier:
-  type: filter
-  label: 'HTML Purifier'
-  mapping:
-    htmlpurifier_configuration:
-      type: string
-      label: 'HTML Purifier Configuration'
