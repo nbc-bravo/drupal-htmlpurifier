@@ -8,6 +8,6 @@
     "issues": "https://www.drupal.org/project/issues/htmlpurifier"
   },
   "require": {
-    "ezyang/htmlpurifier": "4.6.*"
+    "ezyang/htmlpurifier": "^4.10"
   }
 }
