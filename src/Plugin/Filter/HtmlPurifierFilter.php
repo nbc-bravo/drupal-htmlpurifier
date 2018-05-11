@@ -58,7 +58,7 @@ class HtmlPurifierFilter extends FilterBase {
         }
       }
       else {
-        trigger_error("Invalid value for namespace $namespace, must be an array of directives.", E_USER_ERROR);
+        $this->configErrors[] = 'Invalid value for namespace $namespace, must be an array of directives.';
       }
     }
 
