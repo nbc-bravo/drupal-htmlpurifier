@@ -52,8 +52,13 @@ class HtmlPurifierFilter extends FilterBase {
 
     $settings = Yaml::decode($configuration);
     foreach ($settings as $namespace => $directives) {
-      foreach ($directives as $key => $value) {
-        $purifier_config->set("$namespace.$key", $value);
+      if (is_array($directives)) {
+        foreach ($directives as $key => $value) {
+          $purifier_config->set("$namespace.$key", $value);
+        }
+      }
+      else {
+        trigger_error("Invalid value for namespace $namespace, must be an array of directives.", E_USER_ERROR);
       }
     }
 
@@ -125,7 +130,10 @@ class HtmlPurifierFilter extends FilterBase {
    * @param $errstr
    */
   public function configErrorHandler($errno, $errstr) {
-    if ($errno === E_USER_WARNING) {
+    // Do not set a validation error if the error is about a deprecated use.
+    if ($errno < E_DEPRECATED) {
+      // \HTMLPurifier_Config::triggerError() adds ' invoked on line ...' to the
+      // error message. Remove that part from our validation error message.
       $needle = 'invoked on line';
       $pos = strpos($errstr, $needle);
       if ($pos !== FALSE) {
@@ -133,7 +141,7 @@ class HtmlPurifierFilter extends FilterBase {
         $this->configErrors[] = $message;
       }
       else {
-        $this->configErrors[] = $errstr;
+        $this->configErrors[] = 'HTMLPurifier configuration is not valid. Error: ' . $errstr;
       }
     }
   }
