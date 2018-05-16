@@ -3,6 +3,7 @@
 namespace Drupal\Tests\htmlpurifier\Kernel;
 
 use Drupal\Component\Serialization\Yaml;
+use Drupal\Core\Form\FormState;
 use Drupal\filter\FilterPluginCollection;
 use Drupal\KernelTests\KernelTestBase;
 
@@ -51,6 +52,69 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $expected = '';
     $processed = $this->filter->process($input, 'und')->getProcessedText();
     self::assertSame($expected, $processed);
+  }
+
+  public function testConfigurationValidation() {
+    $element = [
+      '#parents' => [
+        'filters',
+        'htmlpurifier',
+        'settings',
+        'htmlpurifier_configuration',
+      ],
+    ];
+    $error_key = 'filters][htmlpurifier][settings][htmlpurifier_configuration';
+
+    // Test empty configuration.
+    $form_state = new FormState();
+    $filters = [
+      'htmlpurifier' => [
+        'settings' => [
+          'htmlpurifier_configuration' => '',
+        ],
+      ],
+    ];
+    $form_state->setValue('filters', $filters);
+    $this->filter->settingsFormConfigurationValidate($element, $form_state);
+    $errors = [$error_key => 'HTMLPurifier configuration is not valid. Error: Invalid argument supplied for foreach()'];
+    self::assertSame($errors, $form_state->getErrors());
+
+    $purifier_config = \HTMLPurifier_Config::createDefault();
+    $default_configuration = Yaml::encode($purifier_config->getAll());
+
+    // Test default configuration gives no errors.
+    $form_state = new FormState();
+    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $default_configuration;
+    $form_state->setValue('filters', $filters);
+    $this->filter->settingsFormConfigurationValidate($element, $form_state);
+    $errors = [];
+    self::assertSame($errors, $form_state->getErrors());
+
+    // Test null value for a bool expected value.
+    $form_state = new FormState();
+    $configuration = str_replace('RemoveEmpty: false', 'RemoveEmpty: null', $default_configuration);
+    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
+    $form_state->setValue('filters', $filters);
+    $this->filter->settingsFormConfigurationValidate($element, $form_state);
+    $errors = [$error_key => 'Value for AutoFormat.RemoveEmpty is of invalid type, should be bool'];
+    self::assertSame($errors, $form_state->getErrors());
+
+    // Test a fake directive.
+    $form_state = new FormState();
+    $configuration = str_replace('RemoveEmpty:', 'FakeDirective:', $default_configuration);
+    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
+    $form_state->setValue('filters', $filters);
+    $this->filter->settingsFormConfigurationValidate($element, $form_state);
+    $errors = [$error_key => 'Cannot set undefined directive AutoFormat.FakeDirective to value'];
+    self::assertSame($errors, $form_state->getErrors());
+
+    // Test malformed yaml.
+    $form_state = new FormState();
+    $configuration = str_replace('RemoveEmpty: false', 'UnexpectedString', $default_configuration);
+    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
+    $form_state->setValue('filters', $filters);
+    $this->filter->settingsFormConfigurationValidate($element, $form_state);
+    self::assertStringStartsWith( 'Unable to parse', $form_state->getErrors()[$error_key]);
   }
 
 }

@@ -137,7 +137,7 @@ class HtmlPurifierFilter extends FilterBase {
       $needle = 'invoked on line';
       $pos = strpos($errstr, $needle);
       if ($pos !== FALSE) {
-        $message = substr($errstr, 0, $pos);
+        $message = substr($errstr, 0, $pos - 1);
         $this->configErrors[] = $message;
       }
       else {
