@@ -33,14 +33,14 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $input = '<img src="javascript:evil();" onload="evil();" />';
     $expected = '';
     $processed = $this->filter->process($input, 'und')->getProcessedText();
-    self::assertSame($expected, $processed);
+    $this->assertSame($expected, $processed);
   }
 
   public function testRemoveEmpty() {
     $input = '<a></a>';
     $expected = '<a></a>';
     $processed = $this->filter->process($input, 'und')->getProcessedText();
-    self::assertSame($expected, $processed);
+    $this->assertSame($expected, $processed);
 
     $configuration = [
       'AutoFormat' => [
@@ -51,7 +51,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
 
     $expected = '';
     $processed = $this->filter->process($input, 'und')->getProcessedText();
-    self::assertSame($expected, $processed);
+    $this->assertSame($expected, $processed);
   }
 
   public function testConfigurationValidation() {
@@ -77,7 +77,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $form_state->setValue('filters', $filters);
     $this->filter->settingsFormConfigurationValidate($element, $form_state);
     $errors = [$error_key => 'HTMLPurifier configuration is not valid. Error: Invalid argument supplied for foreach()'];
-    self::assertSame($errors, $form_state->getErrors());
+    $this->assertSame($errors, $form_state->getErrors());
 
     $purifier_config = \HTMLPurifier_Config::createDefault();
     $default_configuration = Yaml::encode($purifier_config->getAll());
@@ -88,7 +88,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $form_state->setValue('filters', $filters);
     $this->filter->settingsFormConfigurationValidate($element, $form_state);
     $errors = [];
-    self::assertSame($errors, $form_state->getErrors());
+    $this->assertSame($errors, $form_state->getErrors());
 
     // Test null value for a bool expected value.
     $form_state = new FormState();
@@ -97,7 +97,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $form_state->setValue('filters', $filters);
     $this->filter->settingsFormConfigurationValidate($element, $form_state);
     $errors = [$error_key => 'Value for AutoFormat.RemoveEmpty is of invalid type, should be bool'];
-    self::assertSame($errors, $form_state->getErrors());
+    $this->assertSame($errors, $form_state->getErrors());
 
     // Test a fake directive.
     $form_state = new FormState();
@@ -106,7 +106,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $form_state->setValue('filters', $filters);
     $this->filter->settingsFormConfigurationValidate($element, $form_state);
     $errors = [$error_key => 'Cannot set undefined directive AutoFormat.FakeDirective to value'];
-    self::assertSame($errors, $form_state->getErrors());
+    $this->assertSame($errors, $form_state->getErrors());
 
     // Test malformed yaml.
     $form_state = new FormState();
@@ -114,7 +114,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
     $form_state->setValue('filters', $filters);
     $this->filter->settingsFormConfigurationValidate($element, $form_state);
-    self::assertStringStartsWith( 'Unable to parse', $form_state->getErrors()[$error_key]);
+    $this->assertStringStartsWith( 'Unable to parse', $form_state->getErrors()[$error_key]);
   }
 
 }
