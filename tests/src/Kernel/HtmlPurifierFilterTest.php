@@ -54,7 +54,12 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $this->assertSame($expected, $processed);
   }
 
-  public function testConfigurationValidation() {
+  /**
+   * Test configuration validation for the filter settings form.
+   *
+   * @dataProvider providerTestConfigurationValidation
+   */
+  public function testConfigurationValidation($configuration, $expected_errors) {
     $element = [
       '#parents' => [
         'filters',
@@ -63,58 +68,51 @@ class HtmlPurifierFilterTest extends KernelTestBase {
         'htmlpurifier_configuration',
       ],
     ];
-    $error_key = 'filters][htmlpurifier][settings][htmlpurifier_configuration';
-
-    // Test empty configuration.
     $form_state = new FormState();
-    $filters = [
-      'htmlpurifier' => [
-        'settings' => [
-          'htmlpurifier_configuration' => '',
-        ],
-      ],
-    ];
+    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
     $form_state->setValue('filters', $filters);
-    $this->filter->settingsFormConfigurationValidate($element, $form_state);
-    $errors = [$error_key => 'HTMLPurifier configuration is not valid. Error: Invalid argument supplied for foreach()'];
-    $this->assertSame($errors, $form_state->getErrors());
 
+    $this->filter->settingsFormConfigurationValidate($element, $form_state);
+    $errors = $form_state->getErrors();
+    if (!empty($expected_errors)) {
+      $this->assertNotEmpty($errors);
+      $this->assertStringStartsWith( $expected_errors[0], array_values($errors)[0]);
+    }
+    else {
+      $this->assertSame($expected_errors,  $errors);
+    }
+  }
+
+  public function providerTestConfigurationValidation() {
     $purifier_config = \HTMLPurifier_Config::createDefault();
     $default_configuration = Yaml::encode($purifier_config->getAll());
 
-    // Test default configuration gives no errors.
-    $form_state = new FormState();
-    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $default_configuration;
-    $form_state->setValue('filters', $filters);
-    $this->filter->settingsFormConfigurationValidate($element, $form_state);
-    $errors = [];
-    $this->assertSame($errors, $form_state->getErrors());
+    return [
 
-    // Test null value for a bool expected value.
-    $form_state = new FormState();
-    $configuration = str_replace('RemoveEmpty: false', 'RemoveEmpty: null', $default_configuration);
-    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
-    $form_state->setValue('filters', $filters);
-    $this->filter->settingsFormConfigurationValidate($element, $form_state);
-    $errors = [$error_key => 'Value for AutoFormat.RemoveEmpty is of invalid type, should be bool'];
-    $this->assertSame($errors, $form_state->getErrors());
+      // Test empty configuration is not valid.
+      [
+        '',
+        ['HTMLPurifier configuration is not valid'],
+      ],
 
-    // Test a fake directive.
-    $form_state = new FormState();
-    $configuration = str_replace('RemoveEmpty:', 'FakeDirective:', $default_configuration);
-    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
-    $form_state->setValue('filters', $filters);
-    $this->filter->settingsFormConfigurationValidate($element, $form_state);
-    $errors = [$error_key => 'Cannot set undefined directive AutoFormat.FakeDirective to value'];
-    $this->assertSame($errors, $form_state->getErrors());
+      // Test default configuration gives no errors.
+      [
+        $default_configuration,
+        [],
+      ],
 
-    // Test malformed yaml.
-    $form_state = new FormState();
-    $configuration = str_replace('RemoveEmpty: false', 'UnexpectedString', $default_configuration);
-    $filters['htmlpurifier']['settings']['htmlpurifier_configuration'] = $configuration;
-    $form_state->setValue('filters', $filters);
-    $this->filter->settingsFormConfigurationValidate($element, $form_state);
-    $this->assertStringStartsWith( 'Unable to parse', $form_state->getErrors()[$error_key]);
+      // Test an undefined directive.
+      [
+        str_replace('RemoveEmpty:', 'FakeDirective:', $default_configuration),
+        ['Cannot set undefined directive'],
+      ],
+
+      // Test malformed yaml.
+      [
+        str_replace('RemoveEmpty: false', 'UnexpectedString', $default_configuration),
+        ['Unable to parse'],
+      ],
+    ];
   }
 
 }
