@@ -88,27 +88,19 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $default_configuration = Yaml::encode($purifier_config->getAll());
 
     return [
-
-      // Test empty configuration is not valid.
-      [
+      'invalid empty configuration' => [
         '',
         ['HTMLPurifier configuration is not valid'],
       ],
-
-      // Test default configuration gives no errors.
-      [
+      'default configuration' => [
         $default_configuration,
         [],
       ],
-
-      // Test an undefined directive.
-      [
+      'undefined directive' => [
         str_replace('RemoveEmpty:', 'FakeDirective:', $default_configuration),
         ['Cannot set undefined directive'],
       ],
-
-      // Test malformed yaml.
-      [
+      'malformed yaml' => [
         str_replace('RemoveEmpty: false', 'UnexpectedString', $default_configuration),
         ['Unable to parse'],
       ],
