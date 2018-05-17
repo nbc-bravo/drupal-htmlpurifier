@@ -1,5 +1,0 @@
-htmlpurifier.config_menu:
-  title: 'HTML Purifier settings'
-  description: 'Configure overall settings for the HTML Purifier filters, including how they are cached.'
-  route_name: htmlpurifier.config
-  base_route: htmlpurifier.config
