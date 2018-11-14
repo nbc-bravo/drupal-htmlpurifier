@@ -38,6 +38,9 @@ class HtmlPurifierFilter extends FilterBase {
       $purifier_config = \HTMLPurifier_Config::createDefault();
     }
 
+    // Set Serializer path to the temporary directory so it can be written.
+    $purifier_config->set('Cache.SerializerPath', file_directory_temp());
+
     // Allow other modules to alter the HTML Purifier configuration.
     $event = new ConfigLoadedEvent($purifier_config);
     $event_dispatcher = \Drupal::service('event_dispatcher');
@@ -56,7 +59,6 @@ class HtmlPurifierFilter extends FilterBase {
    *   The configuration encoded as a YAML string.
    *
    * @return \HTMLPurifier_Config
-   *   The applied configuration object.
    */
   protected function applyPurifierConfig($configuration) {
     /* @var $purifier_config \HTMLPurifier_Config */
@@ -64,13 +66,16 @@ class HtmlPurifierFilter extends FilterBase {
 
     $settings = Yaml::decode($configuration);
     foreach ($settings as $namespace => $directives) {
-      if (is_array($directives)) {
-        foreach ($directives as $key => $value) {
-          $purifier_config->set("$namespace.$key", $value);
+      // Keep Cache managing out of the text formats scope.
+      if ($namespace !== 'Cache') {
+        if (is_array($directives)) {
+          foreach ($directives as $key => $value) {
+            $purifier_config->set("$namespace.$key", $value);
+          }
         }
-      }
-      else {
-        $this->configErrors[] = 'Invalid value for namespace $namespace, must be an array of directives.';
+        else {
+          $this->configErrors[] = 'Invalid value for namespace $namespace, must be an array of directives.';
+        }
       }
     }
 
@@ -84,7 +89,10 @@ class HtmlPurifierFilter extends FilterBase {
     if (empty($this->settings['htmlpurifier_configuration'])) {
       /* @var $purifier_config \HTMLPurifier_Config */
       $purifier_config = \HTMLPurifier_Config::createDefault();
-      $default_value = Yaml::encode($purifier_config->getAll());
+      $config_array = $purifier_config->getAll();
+      // Keep Cache managing out of the text formats scope.
+      unset($config_array['Cache']);
+      $default_value = Yaml::encode($config_array);
     }
     else {
       $default_value = $this->settings['htmlpurifier_configuration'];
@@ -107,12 +115,10 @@ class HtmlPurifierFilter extends FilterBase {
   /**
    * Settings form validation callback for htmlpurifier_configuration element.
    *
-   * @param array $element
-   *   The form element.
+   * @param $element
    * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state.
    */
-  public function settingsFormConfigurationValidate(array $element, FormStateInterface $form_state) {
+  public function settingsFormConfigurationValidate($element, FormStateInterface $form_state) {
     $values = $form_state->getValue('filters');
     if (isset($values['htmlpurifier']['settings']['htmlpurifier_configuration'])) {
       $this->configErrors = [];
@@ -140,10 +146,8 @@ class HtmlPurifierFilter extends FilterBase {
   /**
    * Custom error handler to manage invalid purifier configuration assignments.
    *
-   * @param int $errno
-   *   The error number.
-   * @param string $errstr
-   *   The error string.
+   * @param $errno
+   * @param $errstr
    */
   public function configErrorHandler($errno, $errstr) {
     // Do not set a validation error if the error is about a deprecated use.
