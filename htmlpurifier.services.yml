@@ -1,0 +1,5 @@
+services:
+  htmlpurifier.event_subscriber:
+    class: Drupal\htmlpurifier\EventSubscriber\HtmlPurifierSubscriber
+    tags:
+      - { name: event_subscriber }
