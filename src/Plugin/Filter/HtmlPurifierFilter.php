@@ -101,25 +101,25 @@ class HtmlPurifierFilter extends FilterBase {
   public function settingsFormConfigurationValidate($element, FormStateInterface $form_state) {
     $values = $form_state->getValue('filters');
     if (isset($values['htmlpurifier']['settings']['htmlpurifier_configuration'])) {
+      $this->configErrors = [];
+
+      // HTMLPurifier library uses triger_error() for not valid settings.
+      set_error_handler([$this, 'configErrorHandler']);
+      try {
+        $this->applyPurifierConfig($values['htmlpurifier']['settings']['htmlpurifier_configuration']);
+      }
+      catch (\Exception $ex) {
+        // This could be a malformed YAML or any other exception.
+        $form_state->setError($element, $ex->getMessage());
+      }
+      restore_error_handler();
+
+      if (!empty($this->configErrors)) {
+        foreach ($this->configErrors as $error) {
+          $form_state->setError($element, $error);
+        }
         $this->configErrors = [];
-
-        // HTMLPurifier library uses triger_error() for not valid settings.
-        set_error_handler([$this, 'configErrorHandler']);
-        try {
-          $this->applyPurifierConfig($values['htmlpurifier']['settings']['htmlpurifier_configuration']);
-        }
-        catch (\Exception $ex) {
-          // This could be a malformed YAML or any other exception.
-          $form_state->setError($element, $ex->getMessage());
-        }
-        restore_error_handler();
-
-        if (!empty($this->configErrors)) {
-          foreach ($this->configErrors as $error) {
-            $form_state->setError($element, $error);
-          }
-          $this->configErrors = [];
-        }
+      }
     }
   }
 
