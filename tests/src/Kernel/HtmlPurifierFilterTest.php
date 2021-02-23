@@ -7,6 +7,11 @@ use Drupal\Core\Form\FormState;
 use Drupal\filter\FilterPluginCollection;
 use Drupal\KernelTests\KernelTestBase;
 
+/**
+ * Tests htmlpurifier filter.
+ *
+ * @group HtmlPurifier
+ */
 class HtmlPurifierFilterTest extends KernelTestBase {
 
   /**
@@ -21,7 +26,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
    */
   protected $filter;
 
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $manager = $this->container->get('plugin.manager.filter');
@@ -57,9 +62,14 @@ class HtmlPurifierFilterTest extends KernelTestBase {
   /**
    * Test configuration validation for the filter settings form.
    *
+   * @param string $configuration
+   *   The HTMLPurifier configuration.
+   * @param string[] $expected_errors
+   *   The expected errors.
+   *
    * @dataProvider providerTestConfigurationValidation
    */
-  public function testConfigurationValidation($configuration, $expected_errors) {
+  public function testConfigurationValidation(string $configuration, array $expected_errors) {
     $element = [
       '#parents' => [
         'filters',
@@ -76,10 +86,10 @@ class HtmlPurifierFilterTest extends KernelTestBase {
     $errors = $form_state->getErrors();
     if (!empty($expected_errors)) {
       $this->assertNotEmpty($errors);
-      $this->assertStringStartsWith( $expected_errors[0], array_values($errors)[0]);
+      $this->assertStringContainsString($expected_errors[0], array_values($errors)[0]);
     }
     else {
-      $this->assertSame($expected_errors,  $errors);
+      $this->assertSame($expected_errors, $errors);
     }
   }
 
@@ -102,7 +112,7 @@ class HtmlPurifierFilterTest extends KernelTestBase {
       ],
       'malformed yaml' => [
         str_replace('RemoveEmpty: false', 'UnexpectedString', $default_configuration),
-        ['Unable to parse'],
+        ['pars'],
       ],
     ];
   }
