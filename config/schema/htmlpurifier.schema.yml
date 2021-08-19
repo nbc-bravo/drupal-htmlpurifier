@@ -1,0 +1,7 @@
+htmlpurifier.settings:
+  type: config_object
+  label: 'HTML Purifier settings'
+  mapping:
+    cache.serializerpath:
+      type: string
+      label: 'Absolute path with no trailing slash to store serialized definitions in.'

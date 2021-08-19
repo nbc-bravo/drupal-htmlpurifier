@@ -3,10 +3,14 @@
 namespace Drupal\htmlpurifier\Plugin\Filter;
 
 use Drupal\Component\Serialization\Yaml;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
 use Drupal\htmlpurifier\Event\ConfigLoadedEvent;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * HTML Purifier filter.
@@ -18,7 +22,7 @@ use Drupal\htmlpurifier\Event\ConfigLoadedEvent;
  *   type = Drupal\filter\Plugin\FilterInterface::TYPE_HTML_RESTRICTOR
  * )
  */
-class HtmlPurifierFilter extends FilterBase {
+class HtmlPurifierFilter extends FilterBase implements ContainerFactoryPluginInterface {
 
   /**
    * Array of error messages from HTMLPurifier configuration assignments.
@@ -26,6 +30,53 @@ class HtmlPurifierFilter extends FilterBase {
    * @var array
    */
   protected $configErrors = [];
+
+  /**
+   * The file system service.
+   *
+   * @var \Drupal\Core\File\FileSystemInterface
+   */
+  protected $fileSystem;
+
+  /**
+   * HTML purifier configuration.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $htmlPurifierSettings;
+
+  /**
+   * Constructs a \Drupal\htmlpurifier\Plugin\Filter\HtmlPurifierFilter object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param FileSystemInterface $file_system
+   *   The file system service.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   Config factory service.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, FileSystemInterface $file_system, ConfigFactoryInterface $config_factory) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->fileSystem = $file_system;
+    $this->htmlPurifierSettings = $config_factory->get('htmlpurifier.settings');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('file_system'),
+      $container->get('config.factory')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -37,6 +88,14 @@ class HtmlPurifierFilter extends FilterBase {
     else {
       $purifier_config = \HTMLPurifier_Config::createDefault();
     }
+
+    // Set Serializer path to the temporary directory, so it can be written.
+    $cache_serializer_path = $this->htmlPurifierSettings->get('cache.serializerpath');
+    if (empty($cache_serializer_path)) {
+      $cache_serializer_path = $this->fileSystem->getTempDirectory() . '/htmlpurifier';
+    }
+    $this->fileSystem->prepareDirectory($cache_serializer_path, FileSystemInterface::MODIFY_PERMISSIONS | FileSystemInterface::CREATE_DIRECTORY);
+    $purifier_config->set('Cache.SerializerPath', $cache_serializer_path);
 
     // Allow other modules to alter the HTML Purifier configuration.
     $event = new ConfigLoadedEvent($purifier_config);
@@ -64,13 +123,18 @@ class HtmlPurifierFilter extends FilterBase {
 
     $settings = Yaml::decode($configuration);
     foreach ($settings as $namespace => $directives) {
-      if (is_array($directives)) {
-        foreach ($directives as $key => $value) {
-          $purifier_config->set("$namespace.$key", $value);
+
+      // Keep Cache managing out of the text formats scope.
+      if ($namespace !== 'Cache') {
+
+        if (is_array($directives)) {
+          foreach ($directives as $key => $value) {
+            $purifier_config->set("$namespace.$key", $value);
+          }
         }
-      }
-      else {
-        $this->configErrors[] = 'Invalid value for namespace $namespace, must be an array of directives.';
+        else {
+          $this->configErrors[] = 'Invalid value for namespace $namespace, must be an array of directives.';
+        }
       }
     }
 
@@ -82,9 +146,13 @@ class HtmlPurifierFilter extends FilterBase {
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     if (empty($this->settings['htmlpurifier_configuration'])) {
-      /* @var $purifier_config \HTMLPurifier_Config */
       $purifier_config = \HTMLPurifier_Config::createDefault();
-      $default_value = Yaml::encode($purifier_config->getAll());
+      $config_array = $purifier_config->getAll();
+
+      // Keep Cache managing out of the text formats scope.
+      unset($config_array['Cache']);
+
+      $default_value = Yaml::encode($config_array);
     }
     else {
       $default_value = $this->settings['htmlpurifier_configuration'];
