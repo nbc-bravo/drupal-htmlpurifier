@@ -6,8 +6,11 @@ use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
+use Drupal\htmlpurifier\Event\ConfigLoadedEvent;
 
 /**
+ * HTML Purifier filter.
+ *
  * @Filter(
  *   id = "htmlpurifier",
  *   title = @Translation("HTML Purifier"),
@@ -34,6 +37,13 @@ class HtmlPurifierFilter extends FilterBase {
     else {
       $purifier_config = \HTMLPurifier_Config::createDefault();
     }
+
+    // Allow other modules to alter the HTML Purifier configuration.
+    $event = new ConfigLoadedEvent($purifier_config);
+    $event_dispatcher = \Drupal::service('event_dispatcher');
+    $event_dispatcher->dispatch(ConfigLoadedEvent::EVENT_NAME, $event);
+
+    // Purify the text.
     $purifier = new \HTMLPurifier($purifier_config);
     $purified_text = $purifier->purify($text);
     return new FilterProcessResult($purified_text);
@@ -43,8 +53,10 @@ class HtmlPurifierFilter extends FilterBase {
    * Applies the configuration to a HTMLPurifier_Config object.
    *
    * @param string $configuration
+   *   The configuration encoded as a YAML string.
    *
    * @return \HTMLPurifier_Config
+   *   The applied configuration object.
    */
   protected function applyPurifierConfig($configuration) {
     /* @var $purifier_config \HTMLPurifier_Config */
@@ -95,10 +107,12 @@ class HtmlPurifierFilter extends FilterBase {
   /**
    * Settings form validation callback for htmlpurifier_configuration element.
    *
-   * @param $element
+   * @param array $element
+   *   The form element.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
    */
-  public function settingsFormConfigurationValidate($element, FormStateInterface $form_state) {
+  public function settingsFormConfigurationValidate(array $element, FormStateInterface $form_state) {
     $values = $form_state->getValue('filters');
     if (isset($values['htmlpurifier']['settings']['htmlpurifier_configuration'])) {
       $this->configErrors = [];
@@ -126,8 +140,10 @@ class HtmlPurifierFilter extends FilterBase {
   /**
    * Custom error handler to manage invalid purifier configuration assignments.
    *
-   * @param $errno
-   * @param $errstr
+   * @param int $errno
+   *   The error number.
+   * @param string $errstr
+   *   The error string.
    */
   public function configErrorHandler($errno, $errstr) {
     // Do not set a validation error if the error is about a deprecated use.
